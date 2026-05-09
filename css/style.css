@@ -1828,6 +1828,44 @@ a:hover {
 .chat-input-area input:focus {
     border-color: var(--primary);
 }
+.chat-tool-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.chat-tool-btn:hover {
+    background: var(--bg-elevated);
+}
+.emoji-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary);
+    max-height: 120px;
+    overflow-y: auto;
+}
+.emoji-item {
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.emoji-item:hover {
+    background: var(--bg-elevated);
+}
+.chat-img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    cursor: pointer;
+}
 
 /* === Inbox Page === */
 .inbox-page {

@@ -40,9 +40,13 @@
                 </div>
                 <div class="chat-messages" id="chatMessages"></div>
                 <div class="chat-input-area">
+                    <button class="chat-tool-btn" id="emojiBtn" onclick="toggleEmojiPanel()">&#128522;</button>
+                    <button class="chat-tool-btn" onclick="document.getElementById('chatImageFile').click()">&#128247;</button>
+                    <input type="file" id="chatImageFile" accept="image/*" style="display:none" onchange="handleChatImage(event)">
                     <input type="text" id="chatInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()">
                     <button class="btn btn-primary" onclick="sendMsg()">发送</button>
                 </div>
+                <div class="emoji-panel" id="emojiPanel" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -60,30 +64,105 @@
         let pollTimer = null;
         const currentUser = Auth.getUser();
 
+        const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✈️','🏔️','🌊','🌸','🍜','☀️','🌙','⭐','🎵','📷','🗺️'];
+
         function defaultAvatar(username) {
             const ch = username ? username[0].toUpperCase() : 'U';
             return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + ch + '</text></svg>';
         }
 
+        function initEmojiPanel() {
+            const panel = document.getElementById('emojiPanel');
+            panel.innerHTML = EMOJIS.map(e => `<span class="emoji-item" onclick="insertEmoji('${e}')">${e}</span>`).join('');
+        }
+
+        function toggleEmojiPanel() {
+            const panel = document.getElementById('emojiPanel');
+            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function insertEmoji(emoji) {
+            const input = document.getElementById('chatInput');
+            input.value += emoji;
+            input.focus();
+        }
+
+        function handleChatImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('图片不能超过2MB', 'error');
+                event.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                if (!currentChatUser) return;
+                try {
+                    await API.sendMessage(currentChatUser, '[img]' + e.target.result + '[/img]');
+                    await loadMessages();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function renderMessageContent(content) {
+            const imgMatch = content.match(/^\[img\](.*)\[\/img\]$/);
+            if (imgMatch) {
+                return `<img class="chat-img" src="${imgMatch[1]}" alt="图片" onclick="window.open(this.src)">`;
+            }
+            return escapeHtml(content);
+        }
+
         async function loadConversations() {
             try {
-                const convos = await API.getConversations();
+                const [convos, friends] = await Promise.all([
+                    API.getConversations(),
+                    API.getFriends()
+                ]);
                 const list = document.getElementById('chatList');
                 const empty = document.getElementById('emptyChats');
-                if (convos.length === 0) {
+
+                const convoMap = {};
+                convos.forEach(c => { convoMap[c.user_id] = c; });
+
+                const allItems = friends.map(f => {
+                    const c = convoMap[f.id];
+                    return {
+                        user_id: f.id,
+                        username: f.username,
+                        nickname: f.nickname,
+                        avatar: f.avatar,
+                        last_message: c ? c.last_message : '',
+                        last_time: c ? c.last_time : f.friend_since,
+                        unread_count: c ? c.unread_count : 0,
+                        has_message: !!c
+                    };
+                });
+
+                allItems.sort((a, b) => {
+                    if (a.has_message && !b.has_message) return -1;
+                    if (!a.has_message && b.has_message) return 1;
+                    return new Date(b.last_time) - new Date(a.last_time);
+                });
+
+                if (allItems.length === 0) {
                     empty.style.display = 'block';
                     return;
                 }
                 empty.style.display = 'none';
-                list.innerHTML = convos.map(c => `
+                list.innerHTML = allItems.map(c => `
                     <div class="chat-item ${currentChatUser == c.user_id ? 'active' : ''}" onclick="openChat(${c.user_id}, '${escapeHtml(c.nickname || c.username)}')">
                         <img class="chat-item-avatar" src="${c.avatar || defaultAvatar(c.username)}" alt="">
                         <div class="chat-item-info">
                             <div class="chat-item-top">
                                 <span class="chat-item-name">${escapeHtml(c.nickname || c.username)}</span>
-                                <span class="chat-item-time">${formatTime(c.last_time)}</span>
+                                <span class="chat-item-time">${c.last_message ? formatTime(c.last_time) : ''}</span>
                             </div>
-                            <p class="chat-item-preview">${escapeHtml(c.last_message || '')}</p>
+                            <p class="chat-item-preview">${c.last_message ? (c.last_message.startsWith('[img]') ? '[图片]' : escapeHtml(c.last_message)) : '暂无消息'}</p>
                         </div>
                         ${c.unread_count > 0 ? `<span class="badge">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
                     </div>
@@ -116,7 +195,7 @@
                 const container = document.getElementById('chatMessages');
                 container.innerHTML = messages.map(m => `
                     <div class="chat-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">
-                        <p>${escapeHtml(m.content)}</p>
+                        <p>${renderMessageContent(m.content)}</p>
                         <span class="bubble-time">${formatTime(m.created_at)}</span>
                     </div>
                 `).join('');
@@ -162,6 +241,7 @@
 
         loadConversations();
         startPolling();
+        initEmojiPanel();
     </script>
 </body>
 </html>
