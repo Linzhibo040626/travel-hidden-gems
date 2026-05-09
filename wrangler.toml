@@ -6,5 +6,8 @@ binding = "DB"
 database_name = "travel-db"
 database_id = "YOUR_DATABASE_ID"
 
+[ai]
+binding = "AI"
+
 [vars]
 JWT_SECRET = "change-this-to-a-random-secret"

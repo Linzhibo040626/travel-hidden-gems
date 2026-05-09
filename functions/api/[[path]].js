@@ -1,4 +1,5 @@
 import { json, hashPassword, createToken, verifyToken, getUser, getSecret } from './_helpers.js';
+import { checkText, checkImage } from './_sensitive.js';
 
 // --- City Card Data ---
 const TOP_50_CITIES = [
@@ -286,6 +287,10 @@ async function handleRegister(request, env) {
     if (username.length < 2 || username.length > 20) {
         return json({ error: '账号需要2-20个字符' }, 400);
     }
+    const usernameCheck = checkText(username);
+    if (!usernameCheck.pass) {
+        return json({ error: '用户名包含敏感内容，无法注册' }, 400);
+    }
     if (password.length < 6) {
         return json({ error: '密码至少需要6位' }, 400);
     }
@@ -419,6 +424,31 @@ async function handleCreatePost(request, env) {
         return json({ error: '标题、内容、地点和分类为必填项' }, 400);
     }
 
+    const titleCheck = checkText(title);
+    if (!titleCheck.pass) return json({ error: titleCheck.reason }, 400);
+
+    const locationCheck = checkText(location);
+    if (!locationCheck.pass) return json({ error: locationCheck.reason }, 400);
+
+    let textToCheck = '';
+    try {
+        const blocks = JSON.parse(content);
+        if (Array.isArray(blocks)) {
+            textToCheck = blocks.filter(b => b.type === 'text').map(b => b.value).join(' ');
+        } else {
+            textToCheck = content;
+        }
+    } catch { textToCheck = content; }
+    const contentCheck = checkText(textToCheck);
+    if (!contentCheck.pass) return json({ error: contentCheck.reason }, 400);
+
+    if (images && images.length > 0) {
+        for (const img of images) {
+            const imgCheck = await checkImage(env, img);
+            if (!imgCheck.pass) return json({ error: imgCheck.reason }, 400);
+        }
+    }
+
     const imageData = images && images.length > 0 ? JSON.stringify(images) : (image_url || '');
 
     const result = await env.DB.prepare(
@@ -488,6 +518,28 @@ async function handleAddComment(postId, request, env) {
     const { content, reply_to } = await request.json();
     if (!content || !content.trim()) {
         return json({ error: '评论内容不能为空' }, 400);
+    }
+
+    let textToCheck = '';
+    let imageToCheck = '';
+    try {
+        const parsed = JSON.parse(content);
+        if (parsed && typeof parsed === 'object') {
+            textToCheck = parsed.text || '';
+            imageToCheck = parsed.image || '';
+        } else {
+            textToCheck = content;
+        }
+    } catch {
+        textToCheck = content;
+    }
+
+    const textCheck = checkText(textToCheck);
+    if (!textCheck.pass) return json({ error: textCheck.reason }, 400);
+
+    if (imageToCheck) {
+        const imgCheck = await checkImage(env, imageToCheck);
+        if (!imgCheck.pass) return json({ error: imgCheck.reason }, 400);
     }
 
     await env.DB.prepare('INSERT INTO comments (post_id, user_id, content, reply_to) VALUES (?, ?, ?, ?)')
