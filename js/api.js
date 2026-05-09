@@ -49,6 +49,7 @@ const API = {
         if (params.region) query.set('region', params.region);
         if (params.season) query.set('season', params.season);
         if (params.search) query.set('search', params.search);
+        if (params.sort) query.set('sort', params.sort);
         const qs = query.toString();
         return this.request('/posts' + (qs ? '?' + qs : ''));
     },
@@ -75,14 +76,18 @@ const API = {
         return this.request('/posts/' + postId + '/like', { method: 'POST' });
     },
 
+    async toggleFavorite(postId) {
+        return this.request('/posts/' + postId + '/favorite', { method: 'POST' });
+    },
+
     async getComments(postId) {
         return this.request('/posts/' + postId + '/comments');
     },
 
-    async addComment(postId, content) {
+    async addComment(postId, content, replyTo) {
         return this.request('/posts/' + postId + '/comments', {
             method: 'POST',
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, reply_to: replyTo || undefined })
         });
     },
 

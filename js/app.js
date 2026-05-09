@@ -66,7 +66,8 @@ async function loadPosts() {
     const params = {
         category: document.getElementById('filterCategory')?.value || '',
         region: document.getElementById('filterRegion')?.value || '',
-        season: document.getElementById('filterSeason')?.value || ''
+        season: document.getElementById('filterSeason')?.value || '',
+        sort: document.getElementById('filterSort')?.value || ''
     };
 
     try {
@@ -128,7 +129,7 @@ function renderPosts(posts) {
 }
 
 function setupFilters() {
-    const filters = ['filterCategory', 'filterRegion', 'filterSeason'];
+    const filters = ['filterCategory', 'filterRegion', 'filterSeason', 'filterSort'];
     filters.forEach(id => {
         const el = document.getElementById(id);
         if (el) {

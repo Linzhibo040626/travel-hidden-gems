@@ -89,8 +89,14 @@
     <div class="comments-section" id="commentsSection">
         <h3>评论</h3>
         <div class="comment-form" id="commentForm" style="display:none;">
-            <input type="text" id="commentInput" placeholder="写下你的评论...">
-            <button class="btn btn-primary" id="commentBtn">发表</button>
+            <div class="comment-reply-hint" id="replyHint" style="display:none;">
+                <span id="replyHintText"></span>
+                <button onclick="cancelReply()">&#10005;</button>
+            </div>
+            <div class="comment-input-row">
+                <input type="text" id="commentInput" placeholder="写下你的评论...">
+                <button class="btn btn-primary" id="commentBtn">发表</button>
+            </div>
         </div>
         <div id="commentsList"></div>
     </div>
@@ -181,6 +187,12 @@
                         <button class="like-btn ${post.user_liked ? 'liked' : ''}" id="likeBtn" onclick="toggleLike()">
                             &#10084; <span id="likeCount">${post.likes_count || 0}</span>
                         </button>
+                        <button class="favorite-btn ${post.user_favorited ? 'favorited' : ''}" id="favBtn" onclick="toggleFavorite()">
+                            &#9733; <span id="favCount">${post.favorites_count || 0}</span>
+                        </button>
+                        <button class="share-btn" onclick="sharePost()">
+                            &#128279; 转发
+                        </button>
                         ${editBtn}
                     </div>
                 </div>
@@ -238,6 +250,43 @@
                 count.textContent = result.likes_count;
             } catch (err) {
                 showToast(err.message, 'error');
+            }
+        }
+
+        async function toggleFavorite() {
+            if (!Auth.isLoggedIn()) {
+                showToast('请先登录', 'error');
+                return;
+            }
+            try {
+                const result = await API.toggleFavorite(postId);
+                const btn = document.getElementById('favBtn');
+                const count = document.getElementById('favCount');
+                if (result.favorited) {
+                    btn.classList.add('favorited');
+                } else {
+                    btn.classList.remove('favorited');
+                }
+                count.textContent = result.favorites_count;
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function sharePost() {
+            const url = window.location.href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast('链接已复制', 'success');
+                });
+            } else {
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('链接已复制', 'success');
             }
         }
 
@@ -320,18 +369,37 @@
             }
         });
 
+        let replyTo = null;
+
+        function setReply(commentId, nickname) {
+            replyTo = commentId;
+            document.getElementById('replyHint').style.display = 'flex';
+            document.getElementById('replyHintText').textContent = '回复 @' + nickname;
+            document.getElementById('commentInput').focus();
+        }
+
+        function cancelReply() {
+            replyTo = null;
+            document.getElementById('replyHint').style.display = 'none';
+        }
+
         async function loadComments() {
             try {
                 const comments = await API.getComments(postId);
                 const list = document.getElementById('commentsList');
+                const isLoggedIn = Auth.isLoggedIn();
                 if (comments.length === 0) {
-                    list.innerHTML = '<p style="color:var(--gray-400);padding:12px 0;">暂无评论，来说两句吧</p>';
+                    list.innerHTML = '<p style="color:var(--text-muted);padding:12px 0;">暂无评论，来说两句吧</p>';
                 } else {
                     list.innerHTML = comments.map(c => `
                         <div class="comment-item">
-                            <span class="comment-author">${escapeHtml(c.nickname || c.username)}</span>
-                            <span class="comment-time">${formatTime(c.created_at)}</span>
+                            <div class="comment-header">
+                                <span class="comment-author">${escapeHtml(c.nickname || c.username)}</span>
+                                ${c.reply_to_nickname ? `<span class="comment-reply-tag">回复 @${escapeHtml(c.reply_to_nickname)}</span>` : ''}
+                                <span class="comment-time">${formatTime(c.created_at)}</span>
+                            </div>
                             <p class="comment-text">${escapeHtml(c.content)}</p>
+                            ${isLoggedIn ? `<button class="comment-reply-btn" onclick="setReply(${c.id}, '${escapeHtml(c.nickname || c.username)}')">回复</button>` : ''}
                         </div>
                     `).join('');
                 }
@@ -341,7 +409,7 @@
         }
 
         if (Auth.isLoggedIn()) {
-            document.getElementById('commentForm').style.display = 'flex';
+            document.getElementById('commentForm').style.display = 'block';
         }
 
         document.getElementById('commentBtn').addEventListener('click', async () => {
@@ -350,8 +418,9 @@
             if (!content) return;
 
             try {
-                await API.addComment(postId, content);
+                await API.addComment(postId, content, replyTo);
                 input.value = '';
+                cancelReply();
                 loadComments();
                 showToast('评论成功', 'success');
             } catch (err) {

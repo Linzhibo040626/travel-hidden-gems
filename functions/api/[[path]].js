@@ -10,6 +10,9 @@ async function runMigrations(env) {
         env.DB.prepare("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''"),
         env.DB.prepare("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''"),
         env.DB.prepare("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE posts ADD COLUMN favorites_count INTEGER DEFAULT 0"),
+        env.DB.prepare("ALTER TABLE posts ADD COLUMN comments_count INTEGER DEFAULT 0"),
+        env.DB.prepare("ALTER TABLE comments ADD COLUMN reply_to INTEGER DEFAULT NULL"),
     ];
     for (const s of stmts) { try { await s.run(); } catch {} }
     await env.DB.batch([
@@ -17,6 +20,7 @@ async function runMigrations(env) {
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS friendships (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, friend_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, friend_id))`),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER NOT NULL, receiver_id INTEGER NOT NULL, content TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type TEXT NOT NULL, content TEXT NOT NULL, related_id INTEGER, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, user_id INTEGER NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id, user_id))`),
     ]);
     migrated = true;
 }
@@ -68,6 +72,11 @@ export async function onRequest(context) {
         const likeMatch = path.match(/^\/api\/posts\/(\d+)\/like$/);
         if (likeMatch && request.method === 'POST') {
             return await handleToggleLike(likeMatch[1], request, env);
+        }
+
+        const favMatch = path.match(/^\/api\/posts\/(\d+)\/favorite$/);
+        if (favMatch && request.method === 'POST') {
+            return await handleToggleFavorite(favMatch[1], request, env);
         }
 
         const commentsMatch = path.match(/^\/api\/posts\/(\d+)\/comments$/);
@@ -238,6 +247,7 @@ async function handleGetPosts(request, env) {
     const region = url.searchParams.get('region');
     const season = url.searchParams.get('season');
     const search = url.searchParams.get('search');
+    const sort = url.searchParams.get('sort');
 
     let sql = 'SELECT posts.*, COALESCE(users.nickname, users.username) as nickname FROM posts JOIN users ON posts.user_id = users.id';
     const conditions = [];
@@ -254,7 +264,17 @@ async function handleGetPosts(request, env) {
     if (conditions.length > 0) {
         sql += ' WHERE ' + conditions.join(' AND ');
     }
-    sql += ' ORDER BY posts.created_at DESC LIMIT 50';
+
+    if (sort === 'likes') {
+        sql += ' ORDER BY posts.likes_count DESC, posts.created_at DESC';
+    } else if (sort === 'favorites') {
+        sql += ' ORDER BY posts.favorites_count DESC, posts.created_at DESC';
+    } else if (sort === 'comments') {
+        sql += ' ORDER BY posts.comments_count DESC, posts.created_at DESC';
+    } else {
+        sql += ' ORDER BY posts.created_at DESC';
+    }
+    sql += ' LIMIT 50';
 
     const stmt = env.DB.prepare(sql);
     const result = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
@@ -272,13 +292,17 @@ async function handleGetPost(id, request, env) {
     }
 
     let userLiked = false;
+    let userFavorited = false;
     if (user) {
-        const like = await env.DB.prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?')
-            .bind(id, user.id).first();
+        const [like, fav] = await Promise.all([
+            env.DB.prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?').bind(id, user.id).first(),
+            env.DB.prepare('SELECT id FROM favorites WHERE post_id = ? AND user_id = ?').bind(id, user.id).first()
+        ]);
         userLiked = !!like;
+        userFavorited = !!fav;
     }
 
-    return json({ ...post, user_liked: userLiked });
+    return json({ ...post, user_liked: userLiked, user_favorited: userFavorited });
 }
 
 async function handleCreatePost(request, env) {
@@ -319,9 +343,35 @@ async function handleToggleLike(postId, request, env) {
     }
 }
 
+async function handleToggleFavorite(postId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const existing = await env.DB.prepare('SELECT id FROM favorites WHERE post_id = ? AND user_id = ?')
+        .bind(postId, user.id).first();
+
+    if (existing) {
+        await env.DB.prepare('DELETE FROM favorites WHERE id = ?').bind(existing.id).run();
+        await env.DB.prepare('UPDATE posts SET favorites_count = favorites_count - 1 WHERE id = ?').bind(postId).run();
+        const post = await env.DB.prepare('SELECT favorites_count FROM posts WHERE id = ?').bind(postId).first();
+        return json({ favorited: false, favorites_count: post.favorites_count });
+    } else {
+        await env.DB.prepare('INSERT INTO favorites (post_id, user_id) VALUES (?, ?)').bind(postId, user.id).run();
+        await env.DB.prepare('UPDATE posts SET favorites_count = favorites_count + 1 WHERE id = ?').bind(postId).run();
+        const post = await env.DB.prepare('SELECT favorites_count FROM posts WHERE id = ?').bind(postId).first();
+        return json({ favorited: true, favorites_count: post.favorites_count });
+    }
+}
+
 async function handleGetComments(postId, env) {
     const result = await env.DB.prepare(
-        'SELECT comments.*, COALESCE(users.nickname, users.username) as nickname FROM comments JOIN users ON comments.user_id = users.id WHERE comments.post_id = ? ORDER BY comments.created_at ASC'
+        `SELECT c.*, COALESCE(u.nickname, u.username) as nickname,
+         COALESCE(ru.nickname, ru.username) as reply_to_nickname
+         FROM comments c
+         JOIN users u ON c.user_id = u.id
+         LEFT JOIN comments rc ON c.reply_to = rc.id
+         LEFT JOIN users ru ON rc.user_id = ru.id
+         WHERE c.post_id = ? ORDER BY c.created_at ASC`
     ).bind(postId).all();
     return json(result.results || []);
 }
@@ -330,13 +380,14 @@ async function handleAddComment(postId, request, env) {
     const user = await getUser(request, env);
     if (!user) return json({ error: '请先登录' }, 401);
 
-    const { content } = await request.json();
+    const { content, reply_to } = await request.json();
     if (!content || !content.trim()) {
         return json({ error: '评论内容不能为空' }, 400);
     }
 
-    await env.DB.prepare('INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)')
-        .bind(postId, user.id, content.trim()).run();
+    await env.DB.prepare('INSERT INTO comments (post_id, user_id, content, reply_to) VALUES (?, ?, ?, ?)')
+        .bind(postId, user.id, content.trim(), reply_to || null).run();
+    await env.DB.prepare('UPDATE posts SET comments_count = comments_count + 1 WHERE id = ?').bind(postId).run();
 
     return json({ message: '评论成功' }, 201);
 }
