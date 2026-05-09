@@ -9,7 +9,13 @@ const API = {
             headers['Authorization'] = 'Bearer ' + token;
         }
         const res = await fetch(url, { ...options, headers });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            throw new Error('服务器响应异常，请稍后重试');
+        }
         if (!res.ok) {
             throw new Error(data.error || '请求失败');
         }
