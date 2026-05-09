@@ -1265,40 +1265,30 @@ a:hover {
     stroke: url(#yellowRiverGradient);
     stroke-width: 2.5;
     filter: url(#riverGlow);
-    opacity: 0.9;
+    opacity: 0.92;
 }
 
 .river-yangtze {
     stroke: url(#yangtzeRiverGradient);
     stroke-width: 2.8;
     filter: url(#riverGlow);
-    opacity: 0.9;
+    opacity: 0.92;
 }
 
 .river-yellow-bg {
     fill: none;
-    stroke: rgba(241, 196, 15, 0.12);
-    stroke-width: 8;
+    stroke: rgba(241, 196, 15, 0.1);
+    stroke-width: 9;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 .river-yangtze-bg {
     fill: none;
-    stroke: rgba(52, 152, 219, 0.12);
-    stroke-width: 9;
+    stroke: rgba(52, 152, 219, 0.1);
+    stroke-width: 10;
     stroke-linecap: round;
     stroke-linejoin: round;
-}
-
-@keyframes riverFlowYellow {
-    from { stroke-dashoffset: 18; }
-    to { stroke-dashoffset: 0; }
-}
-
-@keyframes riverFlowYangtze {
-    from { stroke-dashoffset: 20; }
-    to { stroke-dashoffset: 0; }
 }
 
 .capital-star {
