@@ -57,6 +57,13 @@ const API = {
         });
     },
 
+    async updatePost(id, data) {
+        return this.request('/posts/' + id, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
     async toggleLike(postId) {
         return this.request('/posts/' + postId + '/like', { method: 'POST' });
     },

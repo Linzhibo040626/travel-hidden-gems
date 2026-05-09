@@ -15,7 +15,7 @@ const Auth = {
     async login(username, password) {
         const data = await API.login(username, password);
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ username: data.username, id: data.id }));
+        localStorage.setItem('user', JSON.stringify({ username: data.username, nickname: data.nickname || data.username, id: data.id }));
         return data;
     },
 
@@ -36,7 +36,7 @@ const Auth = {
         if (this.isLoggedIn()) {
             const user = this.getUser();
             nav.innerHTML = `
-                <a href="profile.html" class="user-info">&#128100; ${escapeHtml(user?.username || '')}</a>
+                <a href="profile.html" class="user-info">&#128100; ${escapeHtml(user?.nickname || user?.username || '')}</a>
                 <a href="create.html" class="btn btn-accent">发布推荐</a>
                 <button class="btn btn-outline" onclick="Auth.logout()">退出</button>
             `;
@@ -78,3 +78,19 @@ function formatTime(dateStr) {
     if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
     return d.toLocaleDateString('zh-CN');
 }
+
+function setupGlobalSearch() {
+    const input = document.querySelector('.nav-search input');
+    if (!input) return;
+    const isIndex = window.location.pathname.endsWith('index.html') || window.location.pathname === '/';
+    if (!isIndex) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const q = input.value.trim();
+                window.location.href = 'index.html' + (q ? '?search=' + encodeURIComponent(q) : '');
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', setupGlobalSearch);

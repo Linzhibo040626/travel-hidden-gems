@@ -64,21 +64,18 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>封面图片</label>
+                <label>图片（最多9张）</label>
                 <div class="image-upload-area">
                     <div class="image-upload-options">
                         <label class="upload-tab active" id="tabLocal" onclick="switchTab('local')">本地上传</label>
                         <label class="upload-tab" id="tabUrl" onclick="switchTab('url')">图片链接</label>
                     </div>
                     <div id="localUpload">
-                        <input type="file" id="imageFile" accept="image/*" onchange="handleFileSelect(event)">
-                        <div class="image-preview" id="imagePreview" style="display:none;">
-                            <img id="previewImg" src="" alt="预览">
-                            <button type="button" class="preview-remove" onclick="removeImage()">&#10005;</button>
-                        </div>
+                        <input type="file" id="imageFile" accept="image/*" multiple onchange="handleFileSelect(event)">
+                        <div class="image-preview-list" id="imagePreviewList"></div>
                     </div>
                     <div id="urlUpload" style="display:none;">
-                        <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg（可选）">
+                        <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg（多个链接用换行分隔）">
                     </div>
                 </div>
             </div>
@@ -99,7 +96,7 @@
         }
         Auth.updateNav();
 
-        let uploadedImageData = '';
+        let uploadedImages = [];
 
         function switchTab(tab) {
             document.getElementById('tabLocal').classList.toggle('active', tab === 'local');
@@ -109,44 +106,63 @@
         }
 
         function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('图片大小不能超过 2MB', 'error');
+            const files = Array.from(event.target.files);
+            if (uploadedImages.length + files.length > 9) {
+                showToast('最多上传9张图片', 'error');
                 event.target.value = '';
                 return;
             }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                uploadedImageData = e.target.result;
-                document.getElementById('previewImg').src = uploadedImageData;
-                document.getElementById('imagePreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            files.forEach(file => {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(`图片 ${file.name} 超过2MB，已跳过`, 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push(e.target.result);
+                    renderImagePreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
         }
 
-        function removeImage() {
-            uploadedImageData = '';
-            document.getElementById('imageFile').value = '';
-            document.getElementById('imagePreview').style.display = 'none';
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            renderImagePreviews();
         }
 
-        function getImageUrl() {
-            if (document.getElementById('localUpload').style.display !== 'none' && uploadedImageData) {
-                return uploadedImageData;
+        function renderImagePreviews() {
+            const container = document.getElementById('imagePreviewList');
+            container.innerHTML = uploadedImages.map((img, i) => `
+                <div class="image-preview">
+                    <img src="${img}" alt="预览">
+                    <button type="button" class="preview-remove" onclick="removeImage(${i})">&#10005;</button>
+                </div>
+            `).join('');
+        }
+
+        function getImages() {
+            if (document.getElementById('localUpload').style.display !== 'none' && uploadedImages.length > 0) {
+                return uploadedImages;
             }
-            return document.getElementById('imageUrl').value.trim();
+            const urlVal = document.getElementById('imageUrl').value.trim();
+            if (urlVal) {
+                return urlVal.split('\n').map(u => u.trim()).filter(u => u);
+            }
+            return [];
         }
 
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const images = getImages();
             const data = {
                 title: document.getElementById('title').value.trim(),
                 location: document.getElementById('location').value.trim(),
                 category: document.getElementById('category').value,
                 region: document.getElementById('region').value,
                 season: document.getElementById('season').value,
-                image_url: getImageUrl(),
+                images: images,
                 content: document.getElementById('content').value.trim()
             };
 

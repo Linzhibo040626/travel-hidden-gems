@@ -30,6 +30,10 @@
             </div>
             <div class="profile-details">
                 <form id="profileForm">
+                    <div class="form-group">
+                        <label for="profileNickname">用户名（昵称）</label>
+                        <input type="text" id="profileNickname" placeholder="设置你的用户名" maxlength="20">
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="profileQQ">QQ号</label>
@@ -78,7 +82,8 @@
         async function loadProfile() {
             try {
                 const profile = await API.getProfile();
-                document.getElementById('profileUsername').textContent = profile.username;
+                document.getElementById('profileUsername').textContent = profile.nickname || profile.username;
+                document.getElementById('profileNickname').value = profile.nickname || '';
                 document.getElementById('profileQQ').value = profile.qq || '';
                 document.getElementById('profileGender').value = profile.gender || '';
                 document.getElementById('profileSig').value = profile.signature || '';
@@ -115,7 +120,10 @@
                                 <span>${formatTime(post.created_at)}</span>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deletePost(${post.id})">删除</button>
+                        <div style="display:flex;gap:8px;flex-shrink:0;margin-left:12px;">
+                            <button class="btn-edit" onclick="window.location.href='post.html?id=${post.id}&edit=1'">编辑</button>
+                            <button class="btn-delete" onclick="deletePost(${post.id})">删除</button>
+                        </div>
                     </div>
                 `).join('');
             } catch (err) {
@@ -126,8 +134,8 @@
         function handleAvatarChange(event) {
             const file = event.target.files[0];
             if (!file) return;
-            if (file.size > 500 * 1024) {
-                showToast('头像图片不能超过 500KB', 'error');
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('头像图片不能超过 2MB', 'error');
                 event.target.value = '';
                 return;
             }
@@ -142,6 +150,7 @@
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
+                nickname: document.getElementById('profileNickname').value.trim(),
                 qq: document.getElementById('profileQQ').value.trim(),
                 gender: document.getElementById('profileGender').value,
                 signature: document.getElementById('profileSig').value.trim()
@@ -153,6 +162,13 @@
                 await API.updateProfile(data);
                 showToast('资料保存成功', 'success');
                 document.getElementById('profileSignature').textContent = data.signature || '这个人很懒，什么都没写~';
+                document.getElementById('profileUsername').textContent = data.nickname || '旅行者';
+                const stored = Auth.getUser();
+                if (stored) {
+                    stored.nickname = data.nickname;
+                    localStorage.setItem('user', JSON.stringify(stored));
+                }
+                Auth.updateNav();
             } catch (err) {
                 showToast(err.message, 'error');
             }

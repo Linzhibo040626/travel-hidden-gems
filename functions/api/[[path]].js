@@ -30,6 +30,9 @@ export async function onRequest(context) {
         if (postMatch && request.method === 'GET') {
             return await handleGetPost(postMatch[1], request, env);
         }
+        if (postMatch && request.method === 'PUT') {
+            return await handleUpdatePost(postMatch[1], request, env);
+        }
         if (postMatch && request.method === 'DELETE') {
             return await handleDeletePost(postMatch[1], request, env);
         }
@@ -69,10 +72,10 @@ export async function onRequest(context) {
 async function handleRegister(request, env) {
     const { username, password } = await request.json();
     if (!username || !password) {
-        return json({ error: '用户名和密码不能为空' }, 400);
+        return json({ error: '账号和密码不能为空' }, 400);
     }
     if (username.length < 2 || username.length > 20) {
-        return json({ error: '用户名需要2-20个字符' }, 400);
+        return json({ error: '账号需要2-20个字符' }, 400);
     }
     if (password.length < 6) {
         return json({ error: '密码至少需要6位' }, 400);
@@ -80,12 +83,12 @@ async function handleRegister(request, env) {
 
     const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
     if (existing) {
-        return json({ error: '用户名已存在' }, 409);
+        return json({ error: '该账号已存在' }, 409);
     }
 
     const passwordHash = await hashPassword(password);
-    await env.DB.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)')
-        .bind(username, passwordHash).run();
+    await env.DB.prepare('INSERT INTO users (username, password_hash, nickname) VALUES (?, ?, ?)')
+        .bind(username, passwordHash, '旅行者' + username.slice(-4)).run();
 
     return json({ message: '注册成功' }, 201);
 }
@@ -93,23 +96,23 @@ async function handleRegister(request, env) {
 async function handleLogin(request, env) {
     const { username, password } = await request.json();
     if (!username || !password) {
-        return json({ error: '用户名和密码不能为空' }, 400);
+        return json({ error: '账号和密码不能为空' }, 400);
     }
 
-    const user = await env.DB.prepare('SELECT id, username, password_hash FROM users WHERE username = ?')
+    const user = await env.DB.prepare('SELECT id, username, nickname, password_hash FROM users WHERE username = ?')
         .bind(username).first();
 
     if (!user) {
-        return json({ error: '用户名或密码错误' }, 401);
+        return json({ error: '账号或密码错误' }, 401);
     }
 
     const passwordHash = await hashPassword(password);
     if (user.password_hash !== passwordHash) {
-        return json({ error: '用户名或密码错误' }, 401);
+        return json({ error: '账号或密码错误' }, 401);
     }
 
     const token = await createToken({ id: user.id, username: user.username }, getSecret(env));
-    return json({ token, username: user.username, id: user.id });
+    return json({ token, username: user.username, nickname: user.nickname || user.username, id: user.id });
 }
 
 // --- Post Handlers ---
@@ -121,7 +124,7 @@ async function handleGetPosts(request, env) {
     const season = url.searchParams.get('season');
     const search = url.searchParams.get('search');
 
-    let sql = 'SELECT posts.*, users.username FROM posts JOIN users ON posts.user_id = users.id';
+    let sql = 'SELECT posts.*, COALESCE(users.nickname, users.username) as nickname FROM posts JOIN users ON posts.user_id = users.id';
     const conditions = [];
     const params = [];
 
@@ -146,7 +149,7 @@ async function handleGetPosts(request, env) {
 async function handleGetPost(id, request, env) {
     const user = await getUser(request, env);
     const post = await env.DB.prepare(
-        'SELECT posts.*, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?'
+        'SELECT posts.*, COALESCE(users.nickname, users.username) as nickname FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?'
     ).bind(id).first();
 
     if (!post) {
@@ -167,14 +170,16 @@ async function handleCreatePost(request, env) {
     const user = await getUser(request, env);
     if (!user) return json({ error: '请先登录' }, 401);
 
-    const { title, content, location, category, region, season, image_url } = await request.json();
+    const { title, content, location, category, region, season, image_url, images } = await request.json();
     if (!title || !content || !location || !category) {
         return json({ error: '标题、内容、地点和分类为必填项' }, 400);
     }
 
+    const imageData = images && images.length > 0 ? JSON.stringify(images) : (image_url || '');
+
     const result = await env.DB.prepare(
         'INSERT INTO posts (user_id, title, content, location, category, region, season, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(user.id, title, content, location, category, region || '', season || '', image_url || '').run();
+    ).bind(user.id, title, content, location, category, region || '', season || '', imageData).run();
 
     return json({ id: result.meta.last_row_id, message: '发布成功' }, 201);
 }
@@ -201,7 +206,7 @@ async function handleToggleLike(postId, request, env) {
 
 async function handleGetComments(postId, env) {
     const result = await env.DB.prepare(
-        'SELECT comments.*, users.username FROM comments JOIN users ON comments.user_id = users.id WHERE comments.post_id = ? ORDER BY comments.created_at ASC'
+        'SELECT comments.*, COALESCE(users.nickname, users.username) as nickname FROM comments JOIN users ON comments.user_id = users.id WHERE comments.post_id = ? ORDER BY comments.created_at ASC'
     ).bind(postId).all();
     return json(result.results || []);
 }
@@ -228,7 +233,7 @@ async function handleGetProfile(request, env) {
     if (!user) return json({ error: '请先登录' }, 401);
 
     const profile = await env.DB.prepare(
-        'SELECT id, username, qq, gender, avatar, signature, created_at FROM users WHERE id = ?'
+        'SELECT id, username, nickname, qq, gender, avatar, signature, created_at FROM users WHERE id = ?'
     ).bind(user.id).first();
 
     if (!profile) return json({ error: '用户不存在' }, 404);
@@ -239,18 +244,18 @@ async function handleUpdateProfile(request, env) {
     const user = await getUser(request, env);
     if (!user) return json({ error: '请先登录' }, 401);
 
-    const { qq, gender, signature, avatar } = await request.json();
+    const { qq, gender, signature, avatar, nickname } = await request.json();
 
+    let sql, params;
     if (avatar) {
-        await env.DB.prepare(
-            'UPDATE users SET qq = ?, gender = ?, signature = ?, avatar = ? WHERE id = ?'
-        ).bind(qq || '', gender || '', signature || '', avatar, user.id).run();
+        sql = 'UPDATE users SET nickname = ?, qq = ?, gender = ?, signature = ?, avatar = ? WHERE id = ?';
+        params = [nickname || '', qq || '', gender || '', signature || '', avatar, user.id];
     } else {
-        await env.DB.prepare(
-            'UPDATE users SET qq = ?, gender = ?, signature = ? WHERE id = ?'
-        ).bind(qq || '', gender || '', signature || '', user.id).run();
+        sql = 'UPDATE users SET nickname = ?, qq = ?, gender = ?, signature = ? WHERE id = ?';
+        params = [nickname || '', qq || '', gender || '', signature || '', user.id];
     }
 
+    await env.DB.prepare(sql).bind(...params).run();
     return json({ message: '资料更新成功' });
 }
 
@@ -278,4 +283,26 @@ async function handleDeletePost(postId, request, env) {
     await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId).run();
 
     return json({ message: '删除成功' });
+}
+
+async function handleUpdatePost(postId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const post = await env.DB.prepare('SELECT user_id FROM posts WHERE id = ?').bind(postId).first();
+    if (!post) return json({ error: '帖子不存在' }, 404);
+    if (post.user_id !== user.id) return json({ error: '只能编辑自己的帖子' }, 403);
+
+    const { title, content, location, category, region, season, image_url, images } = await request.json();
+    if (!title || !content || !location || !category) {
+        return json({ error: '标题、内容、地点和分类为必填项' }, 400);
+    }
+
+    const imageData = images && images.length > 0 ? JSON.stringify(images) : (image_url || '');
+
+    await env.DB.prepare(
+        'UPDATE posts SET title = ?, content = ?, location = ?, category = ?, region = ?, season = ?, image_url = ? WHERE id = ?'
+    ).bind(title, content, location, category, region || '', season || '', imageData, postId).run();
+
+    return json({ message: '更新成功' });
 }

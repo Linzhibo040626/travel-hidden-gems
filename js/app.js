@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     Auth.updateNav();
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('search');
+    if (searchQuery) {
+        const input = document.getElementById('searchInput');
+        if (input) input.value = searchQuery;
+    }
     loadPosts();
     setupFilters();
     setupSearch();
@@ -22,6 +28,15 @@ async function loadPosts() {
     }
 }
 
+function getFirstImage(imageUrl) {
+    if (!imageUrl) return '';
+    try {
+        const parsed = JSON.parse(imageUrl);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    } catch {}
+    return imageUrl;
+}
+
 function renderPosts(posts) {
     const grid = document.getElementById('postGrid');
     const empty = document.getElementById('emptyState');
@@ -37,17 +52,19 @@ function renderPosts(posts) {
     grid.style.display = 'grid';
     if (empty) empty.style.display = 'none';
 
-    grid.innerHTML = posts.map(post => `
+    grid.innerHTML = posts.map(post => {
+        const img = getFirstImage(post.image_url);
+        return `
         <div class="post-card" onclick="window.location.href='post.html?id=${post.id}'">
-            ${post.image_url
-                ? `<img class="post-card-image" src="${escapeHtml(post.image_url)}" alt="${escapeHtml(post.title)}" loading="lazy">`
+            ${img
+                ? `<img class="post-card-image" src="${escapeHtml(img)}" alt="${escapeHtml(post.title)}" loading="lazy">`
                 : `<div class="post-card-image" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--primary-bg);">&#127757;</div>`
             }
             <div class="post-card-body">
                 <h3 class="post-card-title">${escapeHtml(post.title)}</h3>
                 <div class="post-card-meta">
                     <span>&#128205; ${escapeHtml(post.location)}</span>
-                    <span>&#128100; ${escapeHtml(post.username || '匿名')}</span>
+                    <span>&#128100; ${escapeHtml(post.nickname || '匿名')}</span>
                 </div>
                 <span class="post-card-tag">${escapeHtml(post.category)}</span>
                 ${post.season ? `<span class="post-card-tag" style="margin-left:4px;">${escapeHtml(post.season)}</span>` : ''}
@@ -57,7 +74,7 @@ function renderPosts(posts) {
                 <span>${formatTime(post.created_at)}</span>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function setupFilters() {

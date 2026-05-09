@@ -19,6 +19,70 @@
         <!-- Loaded dynamically -->
     </div>
 
+    <div class="edit-modal" id="editModal" style="display:none;">
+        <div class="edit-modal-content">
+            <h3>编辑帖子</h3>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editTitle">标题</label>
+                    <input type="text" id="editTitle" required maxlength="50">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editLocation">地点</label>
+                        <input type="text" id="editLocation" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory">分类</label>
+                        <select id="editCategory" required>
+                            <option value="小众景点">小众景点</option>
+                            <option value="大众景点的小众去处">大众景点的小众去处</option>
+                            <option value="避峰攻略">避峰攻略</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRegion">地区</label>
+                        <select id="editRegion" required>
+                            <option value="华东">华东</option>
+                            <option value="华南">华南</option>
+                            <option value="华北">华北</option>
+                            <option value="西南">西南</option>
+                            <option value="西北">西北</option>
+                            <option value="东北">东北</option>
+                            <option value="华中">华中</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSeason">适合季节</label>
+                        <select id="editSeason">
+                            <option value="">未选择</option>
+                            <option value="春季">春季</option>
+                            <option value="夏季">夏季</option>
+                            <option value="秋季">秋季</option>
+                            <option value="冬季">冬季</option>
+                            <option value="四季皆宜">四季皆宜</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>图片</label>
+                    <input type="file" id="editImageFile" accept="image/*" multiple onchange="handleEditFileSelect(event)">
+                    <div class="image-preview-list" id="editImagePreviewList"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editContent">详细介绍</label>
+                    <textarea id="editContent" required rows="6"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                    <button type="button" class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="comments-section" id="commentsSection">
         <h3>评论</h3>
         <div class="comment-form" id="commentForm" style="display:none;">
@@ -45,12 +109,29 @@
         }
 
         let currentPost = null;
+        let editImages = [];
+
+        function getPostImages(post) {
+            if (!post.image_url) return [];
+            try {
+                const parsed = JSON.parse(post.image_url);
+                if (Array.isArray(parsed)) return parsed;
+            } catch {}
+            return [post.image_url];
+        }
 
         async function loadPost() {
             try {
                 currentPost = await API.getPost(postId);
                 renderPost(currentPost);
+                initCarouselTouch();
                 loadComments();
+                if (urlParams.get('edit') === '1') {
+                    const user = Auth.getUser();
+                    if (user && user.id === currentPost.user_id) {
+                        openEditModal();
+                    }
+                }
             } catch (err) {
                 showToast('加载失败', 'error');
             }
@@ -58,9 +139,27 @@
 
         function renderPost(post) {
             const detail = document.getElementById('postDetail');
-            const imageHtml = post.image_url
-                ? `<img class="post-detail-image" src="${escapeHtml(post.image_url)}" alt="${escapeHtml(post.title)}">`
-                : '';
+            const images = getPostImages(post);
+            let imageHtml = '';
+            if (images.length > 1) {
+                imageHtml = `
+                    <div class="image-carousel">
+                        <div class="carousel-track" id="carouselTrack">
+                            ${images.map((img, i) => `<img class="carousel-slide" src="${escapeHtml(img)}" alt="图片${i+1}">`).join('')}
+                        </div>
+                        <button class="carousel-btn carousel-prev" onclick="carouselMove(-1)">&#10094;</button>
+                        <button class="carousel-btn carousel-next" onclick="carouselMove(1)">&#10095;</button>
+                        <div class="carousel-dots">
+                            ${images.map((_, i) => `<span class="carousel-dot ${i===0?'active':''}" onclick="carouselGo(${i})"></span>`).join('')}
+                        </div>
+                    </div>`;
+            } else if (images.length === 1) {
+                imageHtml = `<img class="post-detail-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(post.title)}">`;
+            }
+
+            const user = Auth.getUser();
+            const isOwner = user && user.id === post.user_id;
+            const editBtn = isOwner ? `<button class="btn btn-outline" onclick="openEditModal()">编辑</button>` : '';
 
             detail.innerHTML = `
                 ${imageHtml}
@@ -71,7 +170,7 @@
                         <span>&#128196; ${escapeHtml(post.category)}</span>
                         <span>&#127759; ${escapeHtml(post.region || '')}</span>
                         ${post.season ? `<span>&#127808; ${escapeHtml(post.season)}</span>` : ''}
-                        <span>&#128100; ${escapeHtml(post.username || '匿名')}</span>
+                        <span>&#128100; ${escapeHtml(post.nickname || '匿名')}</span>
                         <span>${formatTime(post.created_at)}</span>
                     </div>
                     <div class="post-detail-content">${escapeHtml(post.content)}</div>
@@ -79,9 +178,44 @@
                         <button class="like-btn ${post.user_liked ? 'liked' : ''}" id="likeBtn" onclick="toggleLike()">
                             &#10084; <span id="likeCount">${post.likes_count || 0}</span>
                         </button>
+                        ${editBtn}
                     </div>
                 </div>
             `;
+        }
+
+        let carouselIndex = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function carouselMove(dir) {
+            const images = getPostImages(currentPost);
+            carouselIndex = (carouselIndex + dir + images.length) % images.length;
+            updateCarousel();
+        }
+        function carouselGo(index) {
+            carouselIndex = index;
+            updateCarousel();
+        }
+        function updateCarousel() {
+            const track = document.getElementById('carouselTrack');
+            if (!track) return;
+            track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+            document.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === carouselIndex);
+            });
+        }
+        function initCarouselTouch() {
+            const track = document.getElementById('carouselTrack');
+            if (!track) return;
+            track.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+            track.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
+                if (Math.abs(diff) > 50) {
+                    carouselMove(diff > 0 ? 1 : -1);
+                }
+            });
         }
 
         async function toggleLike() {
@@ -104,6 +238,85 @@
             }
         }
 
+        function openEditModal() {
+            if (!currentPost) return;
+            document.getElementById('editTitle').value = currentPost.title;
+            document.getElementById('editLocation').value = currentPost.location;
+            document.getElementById('editCategory').value = currentPost.category;
+            document.getElementById('editRegion').value = currentPost.region || '';
+            document.getElementById('editSeason').value = currentPost.season || '';
+            document.getElementById('editContent').value = currentPost.content;
+            editImages = getPostImages(currentPost).slice();
+            renderEditPreviews();
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function handleEditFileSelect(event) {
+            const files = Array.from(event.target.files);
+            if (editImages.length + files.length > 9) {
+                showToast('最多9张图片', 'error');
+                event.target.value = '';
+                return;
+            }
+            files.forEach(file => {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast(`图片 ${file.name} 超过2MB，已跳过`, 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editImages.push(e.target.result);
+                    renderEditPreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        }
+
+        function removeEditImage(index) {
+            editImages.splice(index, 1);
+            renderEditPreviews();
+        }
+
+        function renderEditPreviews() {
+            const container = document.getElementById('editImagePreviewList');
+            container.innerHTML = editImages.map((img, i) => `
+                <div class="image-preview">
+                    <img src="${img}" alt="预览">
+                    <button type="button" class="preview-remove" onclick="removeEditImage(${i})">&#10005;</button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('editTitle').value.trim(),
+                location: document.getElementById('editLocation').value.trim(),
+                category: document.getElementById('editCategory').value,
+                region: document.getElementById('editRegion').value,
+                season: document.getElementById('editSeason').value,
+                images: editImages,
+                content: document.getElementById('editContent').value.trim()
+            };
+            if (!data.title || !data.location || !data.category || !data.content) {
+                showToast('请填写必填项', 'error');
+                return;
+            }
+            try {
+                await API.updatePost(postId, data);
+                showToast('更新成功', 'success');
+                closeEditModal();
+                loadPost();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
         async function loadComments() {
             try {
                 const comments = await API.getComments(postId);
@@ -113,7 +326,7 @@
                 } else {
                     list.innerHTML = comments.map(c => `
                         <div class="comment-item">
-                            <span class="comment-author">${escapeHtml(c.username)}</span>
+                            <span class="comment-author">${escapeHtml(c.nickname || c.username)}</span>
                             <span class="comment-time">${formatTime(c.created_at)}</span>
                             <p class="comment-text">${escapeHtml(c.content)}</p>
                         </div>
@@ -148,19 +361,6 @@
                 document.getElementById('commentBtn').click();
             }
         });
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        function formatTime(dateStr) {
-            if (!dateStr) return '';
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('zh-CN');
-        }
 
         loadPost();
     </script>
