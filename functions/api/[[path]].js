@@ -30,6 +30,9 @@ export async function onRequest(context) {
         if (postMatch && request.method === 'GET') {
             return await handleGetPost(postMatch[1], request, env);
         }
+        if (postMatch && request.method === 'DELETE') {
+            return await handleDeletePost(postMatch[1], request, env);
+        }
 
         const likeMatch = path.match(/^\/api\/posts\/(\d+)\/like$/);
         if (likeMatch && request.method === 'POST') {
@@ -42,6 +45,17 @@ export async function onRequest(context) {
         }
         if (commentsMatch && request.method === 'POST') {
             return await handleAddComment(commentsMatch[1], request, env);
+        }
+
+        // User profile routes
+        if (path === '/api/user/profile' && request.method === 'GET') {
+            return await handleGetProfile(request, env);
+        }
+        if (path === '/api/user/profile' && request.method === 'POST') {
+            return await handleUpdateProfile(request, env);
+        }
+        if (path === '/api/user/posts' && request.method === 'GET') {
+            return await handleGetMyPosts(request, env);
         }
 
         return json({ error: '未找到该接口' }, 404);
@@ -205,4 +219,63 @@ async function handleAddComment(postId, request, env) {
         .bind(postId, user.id, content.trim()).run();
 
     return json({ message: '评论成功' }, 201);
+}
+
+// --- User Profile Handlers ---
+
+async function handleGetProfile(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const profile = await env.DB.prepare(
+        'SELECT id, username, qq, gender, avatar, signature, created_at FROM users WHERE id = ?'
+    ).bind(user.id).first();
+
+    if (!profile) return json({ error: '用户不存在' }, 404);
+    return json(profile);
+}
+
+async function handleUpdateProfile(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const { qq, gender, signature, avatar } = await request.json();
+
+    if (avatar) {
+        await env.DB.prepare(
+            'UPDATE users SET qq = ?, gender = ?, signature = ?, avatar = ? WHERE id = ?'
+        ).bind(qq || '', gender || '', signature || '', avatar, user.id).run();
+    } else {
+        await env.DB.prepare(
+            'UPDATE users SET qq = ?, gender = ?, signature = ? WHERE id = ?'
+        ).bind(qq || '', gender || '', signature || '', user.id).run();
+    }
+
+    return json({ message: '资料更新成功' });
+}
+
+async function handleGetMyPosts(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare(
+        'SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC'
+    ).bind(user.id).all();
+
+    return json(result.results || []);
+}
+
+async function handleDeletePost(postId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const post = await env.DB.prepare('SELECT user_id FROM posts WHERE id = ?').bind(postId).first();
+    if (!post) return json({ error: '帖子不存在' }, 404);
+    if (post.user_id !== user.id) return json({ error: '只能删除自己的帖子' }, 403);
+
+    await env.DB.prepare('DELETE FROM comments WHERE post_id = ?').bind(postId).run();
+    await env.DB.prepare('DELETE FROM likes WHERE post_id = ?').bind(postId).run();
+    await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId).run();
+
+    return json({ message: '删除成功' });
 }

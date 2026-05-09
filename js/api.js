@@ -70,5 +70,24 @@ const API = {
             method: 'POST',
             body: JSON.stringify({ content })
         });
+    },
+
+    async getProfile() {
+        return this.request('/user/profile');
+    },
+
+    async updateProfile(data) {
+        return this.request('/user/profile', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async getMyPosts() {
+        return this.request('/user/posts');
+    },
+
+    async deletePost(postId) {
+        return this.request('/posts/' + postId, { method: 'DELETE' });
     }
 };

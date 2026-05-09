@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人主页 - 秘境旅行</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">&#127757; 秘境旅行</a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">
+                    <img id="avatarImg" src="" alt="头像">
+                    <label class="avatar-upload" for="avatarFile">更换头像</label>
+                    <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="handleAvatarChange(event)">
+                </div>
+                <div class="profile-info">
+                    <h2 id="profileUsername"></h2>
+                    <p class="profile-signature" id="profileSignature">这个人很懒，什么都没写~</p>
+                </div>
+            </div>
+            <div class="profile-details">
+                <form id="profileForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profileQQ">QQ号</label>
+                            <input type="text" id="profileQQ" placeholder="请输入QQ号">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileGender">性别</label>
+                            <select id="profileGender">
+                                <option value="">未设置</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                                <option value="保密">保密</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileSig">个人签名</label>
+                        <input type="text" id="profileSig" placeholder="写一句话介绍自己" maxlength="50">
+                    </div>
+                    <button type="submit" class="btn btn-primary">保存资料</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-posts">
+            <h3>我的帖子</h3>
+            <div id="myPostsList"></div>
+            <div class="empty-state" id="emptyPosts" style="display:none;">
+                <p>你还没有发布过帖子</p>
+                <a href="create.html" class="btn btn-primary">去发布</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            showToast('请先登录', 'error');
+            setTimeout(() => window.location.href = 'login.html', 1000);
+        }
+        Auth.updateNav();
+
+        let avatarData = '';
+
+        async function loadProfile() {
+            try {
+                const profile = await API.getProfile();
+                document.getElementById('profileUsername').textContent = profile.username;
+                document.getElementById('profileQQ').value = profile.qq || '';
+                document.getElementById('profileGender').value = profile.gender || '';
+                document.getElementById('profileSig').value = profile.signature || '';
+                document.getElementById('profileSignature').textContent = profile.signature || '这个人很懒，什么都没写~';
+                if (profile.avatar) {
+                    document.getElementById('avatarImg').src = profile.avatar;
+                } else {
+                    document.getElementById('avatarImg').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2381C784" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="white">' + (profile.username ? profile.username[0].toUpperCase() : 'U') + '</text></svg>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadMyPosts() {
+            try {
+                const posts = await API.getMyPosts();
+                const list = document.getElementById('myPostsList');
+                const empty = document.getElementById('emptyPosts');
+
+                if (posts.length === 0) {
+                    list.style.display = 'none';
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                list.innerHTML = posts.map(post => `
+                    <div class="my-post-item">
+                        <div class="my-post-info" onclick="window.location.href='post.html?id=${post.id}'">
+                            <h4>${escapeHtml(post.title)}</h4>
+                            <div class="my-post-meta">
+                                <span>&#128205; ${escapeHtml(post.location)}</span>
+                                <span>&#10084; ${post.likes_count || 0}</span>
+                                <span>${formatTime(post.created_at)}</span>
+                            </div>
+                        </div>
+                        <button class="btn-delete" onclick="deletePost(${post.id})">删除</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function handleAvatarChange(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 500 * 1024) {
+                showToast('头像图片不能超过 500KB', 'error');
+                event.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                avatarData = e.target.result;
+                document.getElementById('avatarImg').src = avatarData;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                qq: document.getElementById('profileQQ').value.trim(),
+                gender: document.getElementById('profileGender').value,
+                signature: document.getElementById('profileSig').value.trim()
+            };
+            if (avatarData) {
+                data.avatar = avatarData;
+            }
+            try {
+                await API.updateProfile(data);
+                showToast('资料保存成功', 'success');
+                document.getElementById('profileSignature').textContent = data.signature || '这个人很懒，什么都没写~';
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        async function deletePost(postId) {
+            if (!confirm('确定要删除这篇帖子吗？')) return;
+            try {
+                await API.deletePost(postId);
+                showToast('删除成功', 'success');
+                loadMyPosts();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        loadProfile();
+        loadMyPosts();
+    </script>
+</body>
+</html>
