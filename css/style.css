@@ -1237,13 +1237,33 @@ a:hover {
 
 .province-path {
     stroke: #FFFFFF;
-    stroke-width: 1.8;
+    stroke-width: 1.5;
     cursor: pointer;
     transition: all var(--transition-smooth);
 }
 
+.step-1-province {
+    stroke: rgba(255, 255, 255, 0.9);
+    stroke-width: 2;
+    filter: brightness(1.05);
+}
+
+.step-2-province {
+    stroke: rgba(255, 255, 255, 0.8);
+    stroke-width: 1.6;
+}
+
+.step-3-province {
+    stroke: rgba(255, 255, 255, 0.7);
+    stroke-width: 1.2;
+}
+
+.step-1, .step-2, .step-3 {
+    transition: transform 0.3s ease;
+}
+
 .province-path:hover {
-    filter: brightness(1.1) drop-shadow(0 3px 6px rgba(27, 94, 107, 0.35));
+    filter: brightness(1.15) drop-shadow(0 3px 6px rgba(27, 94, 107, 0.35));
     stroke: var(--primary);
     stroke-width: 2.5;
     transform-origin: center;

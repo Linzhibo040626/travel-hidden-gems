@@ -1,5 +1,5 @@
 const CHINA_MAP_DATA = {
-    viewBox: "0 0 1000 880",
+    viewBox: "0 -15 1000 910",
     provinces: [
         { name: "新疆", d: "M371.7,194 L371.7,194.7 L364.7,198.5 L366.1,201.5 L368.9,203.1 L364.7,208.4 L353.5,213.7 L352.2,210.6 L342.4,216 L334,222.8 L331.2,229.6 L318.7,230.4 L311.7,247.8 L307.5,253.1 L307.5,256.9 L307.5,258.4 L272.6,267.5 L275.4,272.1 L279.6,270.6 L278.2,278.9 L286.6,285.7 L290.8,291.8 L281,297.1 L282.4,300.1 L286.6,301.6 L286.6,309.2 L283.8,310 L269.8,306.2 L268.4,309.2 L265.7,309.2 L257.3,305.4 L250.3,304.7 L247.5,302.4 L228,303.2 L209.9,307.7 L208.5,313 L200.1,316 L191.7,315.3 L177.8,321.4 L161,320.6 L156.8,316 L149.9,315.3 L142.9,322.1 L137.3,323.6 L117.8,320.6 L115,322.9 L116.4,325.1 L115,324.4 L109.4,331.2 L108,336.5 L96.9,337.3 L95.5,339.6 L82.9,332.7 L80.1,323.6 L80.1,319.1 L70.3,319.8 L60.6,316.8 L56.4,313 L50.8,313.8 L46.6,310 L48,302.4 L45.2,298.6 L39.7,297.8 L38.3,294.1 L32.7,293.3 L29.9,294.8 L28.5,292.5 L24.3,291.8 L24.3,289.5 L29.9,289.5 L34.1,285.7 L29.9,283.4 L31.3,280.4 L29.9,268.3 L21.5,264.5 L18.7,264.5 L17.3,266.8 L13.1,266 L11.7,261.5 L13.1,259.2 L7.6,252.4 L14.5,250.1 L14.5,247 L13.1,245.5 L15.9,241 L29.9,235.7 L28.5,232.6 L35.5,234.2 L41,230.4 L43.8,236.4 L53.6,234.9 L62,224.3 L73.1,224.3 L81.5,220.5 L81.5,217.5 L113.6,206.1 L115,202.3 L113.6,196.2 L115,192.4 L119.2,191.7 L117.8,188.7 L123.4,186.4 L117.8,169.7 L117.8,162.1 L110.8,158.3 L110.8,156.1 L138.7,148.5 L144.3,151.5 L151.3,151.5 L147.1,143.9 L159.6,116.6 L169.4,120.4 L186.1,120.4 L188.9,122.7 L198.7,119.7 L201.5,115.9 L198.7,101.5 L202.9,96.1 L215.4,93.9 L219.6,89.3 L218.2,87 L219.6,84 L235,83.3 L236.4,86.3 L233.6,87.8 L239.1,90.8 L237.8,93.1 L246.1,96.9 L248.9,100.7 L255.9,103.7 L262.9,103 L265.7,106 L271.2,106 L275.4,109 L278.2,116.6 L283.8,121.2 L286.6,128 L283.8,132.5 L286.6,137.9 L281,142.4 L281,146.2 L283.8,151.5 L295,153.8 L325.6,156.1 L345.2,166.7 L354.9,167.4 L354.9,172 L357.7,174.3 L363.3,185.6 L370.3,190.9 L371.7,194 Z", color: "#c0956c" },
         { name: "西藏", d: "M95.5,339.6 L96.9,337.3 L108,336.5 L109.4,331.2 L115,324.4 L116.4,325.1 L115,322.9 L117.8,320.6 L137.3,323.6 L142.9,322.1 L149.9,315.3 L156.8,316 L161,320.6 L177.8,321.4 L191.7,315.3 L200.1,316 L208.5,313 L209.9,307.7 L228,303.2 L247.5,302.4 L250.3,304.7 L257.3,305.4 L265.7,309.2 L260.1,310 L261.5,312.3 L265.7,314.5 L265.7,320.6 L261.5,321.4 L261.5,323.6 L262.9,329.7 L267.1,330.5 L265.7,333.5 L267.1,338.8 L264.3,344.9 L271.2,354 L281,360 L292.2,360 L300.5,365.3 L304.7,365.3 L306.1,366.9 L317.3,366.9 L325.6,371.4 L329.8,369.9 L335.4,372.2 L343.8,369.1 L352.2,372.2 L349.4,374.4 L352.2,373.7 L353.5,376 L354.9,376.7 L354.9,379.7 L356.3,382.8 L361.9,385.1 L364.7,382.8 L367.5,386.6 L368.9,380.5 L373.1,384.3 L378.7,385.1 L377.3,379.7 L385.6,378.2 L387,369.9 L392.6,370.6 L399.6,373.7 L403.8,382 L410.7,389.6 L406.6,393.4 L412.1,401 L414.9,426.8 L412.1,429 L412.1,434.3 L409.4,433.6 L409.4,431.3 L408,432.8 L406.6,439.6 L409.4,442.7 L408,445 L402.4,446.5 L401,441.9 L399.6,446.5 L389.8,439.6 L385.6,447.2 L387,450.3 L381.4,453.3 L373.1,446.5 L360.5,444.2 L354.9,446.5 L353.5,449.5 L336.8,456.3 L331.2,465.4 L327,466.9 L303.3,468.5 L301.9,457.8 L295,456.3 L295,450.3 L292.2,448 L286.6,451 L281,447.2 L267.1,445 L264.3,445.7 L255.9,455.6 L255.9,460.1 L254.5,462.4 L250.3,458.6 L251.7,448.7 L248.9,446.5 L240.5,450.3 L236.4,449.5 L233.6,451.8 L223.8,451.8 L218.2,446.5 L215.4,446.5 L214,450.3 L208.5,446.5 L207.1,450.3 L201.5,442.7 L200.1,444.2 L193.1,442.7 L193.1,437.4 L188.9,438.9 L182,435.9 L179.2,433.6 L177.8,427.5 L176.4,426.8 L168,428.3 L162.4,421.4 L145.7,413.1 L144.3,408.6 L133.1,407.8 L130.3,413.9 L127.5,410.1 L112.2,404 L106.6,397.9 L95.5,395.7 L91.3,391.1 L92.7,386.6 L89.9,382.8 L91.3,381.3 L87.1,377.5 L85.7,370.6 L91.3,367.6 L94.1,373.7 L99.6,369.9 L96.9,359.3 L89.9,350.9 L89.9,343.3 L94.1,342.6 L95.5,339.6 Z", color: "#7a4a2a" },
@@ -53,16 +53,18 @@ function renderChinaMap(container) {
 
     defs.innerHTML = `
         <filter id="provinceShadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/></filter>
+        <filter id="step1Shadow">
+            <feDropShadow dx="2" dy="6" stdDeviation="3" flood-color="#4a2c17" flood-opacity="0.35"/>
+        </filter>
+        <filter id="step2Shadow">
+            <feDropShadow dx="1" dy="3" stdDeviation="2" flood-color="#5a4020" flood-opacity="0.25"/>
+        </filter>
+        <filter id="step3Shadow">
+            <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#2d5a2d" flood-opacity="0.15"/>
+        </filter>
         <filter id="riverGlow">
             <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="riverShimmer">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blur"/>
-            <feSpecularLighting in="blur" surfaceScale="3" specularConstant="0.6" specularExponent="20" result="spec">
-                <fePointLight x="500" y="200" z="300"/>
-            </feSpecularLighting>
-            <feComposite in="SourceGraphic" in2="spec" operator="arithmetic" k1="0" k2="1" k3="0.3" k4="0"/>
         </filter>
         <filter id="starGlow">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
@@ -93,20 +95,46 @@ function renderChinaMap(container) {
     `;
     svg.appendChild(defs);
 
+    const step1 = ["西藏", "青海"];
+    const step2 = ["新疆", "内蒙古", "甘肃", "宁夏", "陕西", "山西", "四川", "重庆", "云南", "贵州", "广西"];
+    function getStep(name) {
+        if (step1.includes(name)) return 1;
+        if (step2.includes(name)) return 2;
+        return 3;
+    }
+
+    const g3 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g3.setAttribute("class", "step-3");
+    const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g2.setAttribute("class", "step-2");
+    g2.setAttribute("transform", "translate(-2, -6)");
+    const g1 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g1.setAttribute("class", "step-1");
+    g1.setAttribute("transform", "translate(-4, -14)");
+
     CHINA_MAP_DATA.provinces.forEach(province => {
+        const step = getStep(province.name);
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", province.d);
         path.setAttribute("data-province", province.name);
-        path.setAttribute("class", "province-path");
+        path.setAttribute("class", `province-path step-${step}-province`);
         path.setAttribute("fill", province.color);
-        path.setAttribute("filter", "url(#provinceShadow)");
+        if (step === 1) path.setAttribute("filter", "url(#step1Shadow)");
+        else if (step === 2) path.setAttribute("filter", "url(#step2Shadow)");
+        else path.setAttribute("filter", "url(#step3Shadow)");
 
         path.addEventListener("mouseenter", (e) => showTooltip(e, province.name));
         path.addEventListener("mouseleave", hideTooltip);
         path.addEventListener("click", () => selectProvince(province.name));
 
-        svg.appendChild(path);
+        if (step === 1) g1.appendChild(path);
+        else if (step === 2) g2.appendChild(path);
+        else g3.appendChild(path);
     });
+
+    svg.appendChild(g3);
+    svg.appendChild(g2);
+    svg.appendChild(g1);
 
     const yellowBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
     yellowBg.setAttribute("d", CHINA_MAP_DATA.rivers.yellowRiver);
@@ -149,19 +177,11 @@ function renderChinaMap(container) {
     svg.appendChild(starGroup);
 
     const legend = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    legend.setAttribute("transform", "translate(20, 750)");
-    const legendColors = [
-        { color: "#7a4a2a", label: ">4000m" },
-        { color: "#8B5E3C", label: "3000-4000m" },
-        { color: "#c0956c", label: "2000-3000m" },
-        { color: "#c9a06c", label: "1000-2000m" },
-        { color: "#d4a574", label: "800-1000m" },
-        { color: "#b8c97a", label: "500-800m" },
-        { color: "#a8c97a", label: "200-500m" },
-        { color: "#8fbc6b", label: "100-200m" },
-        { color: "#6aab5c", label: "50-100m" },
-        { color: "#4d9e4a", label: "20-50m" },
-        { color: "#3d8b3d", label: "<20m" }
+    legend.setAttribute("transform", "translate(20, 770)");
+    const legendItems = [
+        { color: "#7a4a2a", label: "第一阶梯 (>4000m)", desc: "青藏高原" },
+        { color: "#c0956c", label: "第二阶梯 (1000-2000m)", desc: "高原/盆地" },
+        { color: "#4d9e4a", label: "第三阶梯 (<500m)", desc: "平原/丘陵" }
     ];
     const title = document.createElementNS("http://www.w3.org/2000/svg", "text");
     title.setAttribute("x", "0");
@@ -169,22 +189,24 @@ function renderChinaMap(container) {
     title.setAttribute("font-size", "14");
     title.setAttribute("fill", "#333");
     title.setAttribute("font-weight", "bold");
-    title.textContent = "海拔高度";
+    title.textContent = "中国地势三级阶梯";
     legend.appendChild(title);
-    legendColors.forEach((item, i) => {
+    legendItems.forEach((item, i) => {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("x", String(i * 80));
+        rect.setAttribute("x", String(i * 300));
         rect.setAttribute("y", "0");
-        rect.setAttribute("width", "16");
-        rect.setAttribute("height", "16");
+        rect.setAttribute("width", "20");
+        rect.setAttribute("height", "20");
         rect.setAttribute("fill", item.color);
-        rect.setAttribute("rx", "2");
+        rect.setAttribute("rx", "3");
+        rect.setAttribute("stroke", "#fff");
+        rect.setAttribute("stroke-width", "1");
         legend.appendChild(rect);
         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", String(i * 80 + 20));
-        text.setAttribute("y", "13");
-        text.setAttribute("font-size", "10");
-        text.setAttribute("fill", "#555");
+        text.setAttribute("x", String(i * 300 + 26));
+        text.setAttribute("y", "15");
+        text.setAttribute("font-size", "12");
+        text.setAttribute("fill", "#444");
         text.textContent = item.label;
         legend.appendChild(text);
     });
