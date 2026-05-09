@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <circle cx="50" cy="50" r="46" fill="none" stroke="#1A3A4A" stroke-width="3"/>
+  <path d="M25 65 L42 38 L50 48 L58 35 L75 65 Z" fill="url(#mountain)"/>
+  <path d="M30 68 Q45 58 55 65 Q65 72 80 62" fill="none" stroke="url(#river)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M50 25 L52 30 L57 30 L53 33 L55 38 L50 35 L45 38 L47 33 L43 30 L48 30 Z" fill="#D4AF37"/>
+  <defs>
+    <linearGradient id="mountain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B5E6B"/>
+      <stop offset="100%" stop-color="#4DB6AC"/>
+    </linearGradient>
+    <linearGradient id="river" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2E8B8B"/>
+      <stop offset="50%" stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+  </defs>
+</svg>
