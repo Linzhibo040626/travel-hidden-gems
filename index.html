@@ -21,6 +21,10 @@
         </div>
     </nav>
 
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+    </button>
+
     <section class="hero">
         <div class="hero-content">
             <h1 class="hero-title">去别处，遇见不同</h1>
@@ -29,41 +33,66 @@
         </div>
     </section>
 
-    <div class="filter-bar">
-        <select id="filterCategory">
-            <option value="">全部类型</option>
-            <option value="小众景点">小众景点</option>
-            <option value="大众景点的小众去处">大众景点的小众去处</option>
-            <option value="避峰攻略">避峰攻略</option>
-        </select>
-        <select id="filterRegion">
-            <option value="">全部地区</option>
-            <option value="华东">华东</option>
-            <option value="华南">华南</option>
-            <option value="华北">华北</option>
-            <option value="西南">西南</option>
-            <option value="西北">西北</option>
-            <option value="东北">东北</option>
-            <option value="华中">华中</option>
-        </select>
-        <select id="filterSeason">
-            <option value="">全部季节</option>
-            <option value="春季">春季</option>
-            <option value="夏季">夏季</option>
-            <option value="秋季">秋季</option>
-            <option value="冬季">冬季</option>
-            <option value="四季皆宜">四季皆宜</option>
-        </select>
-    </div>
+    <div class="main-layout">
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <button class="sidebar-btn active" id="btnPosts" onclick="switchView('posts')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    <span>浏览帖子</span>
+                </button>
+                <button class="sidebar-btn" id="btnMap" onclick="switchView('map')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
+                    <span>中国地图</span>
+                </button>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <div class="container">
-        <div class="post-grid" id="postGrid">
-            <!-- Posts loaded dynamically -->
-        </div>
-        <div class="empty-state" id="emptyState" style="display:none;">
-            <p>还没有帖子，来分享你的秘境发现吧</p>
-            <a href="create.html" class="btn btn-primary">发布第一篇</a>
-        </div>
+        <main class="main-content">
+            <div id="viewPosts">
+                <div class="filter-bar">
+                    <select id="filterCategory">
+                        <option value="">全部类型</option>
+                        <option value="小众景点">小众景点</option>
+                        <option value="大众景点的小众去处">大众景点的小众去处</option>
+                        <option value="避峰攻略">避峰攻略</option>
+                    </select>
+                    <select id="filterRegion">
+                        <option value="">全部地区</option>
+                        <option value="华东">华东</option>
+                        <option value="华南">华南</option>
+                        <option value="华北">华北</option>
+                        <option value="西南">西南</option>
+                        <option value="西北">西北</option>
+                        <option value="东北">东北</option>
+                        <option value="华中">华中</option>
+                    </select>
+                    <select id="filterSeason">
+                        <option value="">全部季节</option>
+                        <option value="春季">春季</option>
+                        <option value="夏季">夏季</option>
+                        <option value="秋季">秋季</option>
+                        <option value="冬季">冬季</option>
+                        <option value="四季皆宜">四季皆宜</option>
+                    </select>
+                </div>
+                <div class="container">
+                    <div class="post-grid" id="postGrid"></div>
+                    <div class="empty-state" id="emptyState" style="display:none;">
+                        <p>还没有帖子，来分享你的发现吧</p>
+                        <a href="create.html" class="btn btn-primary">发布第一篇</a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="viewMap" style="display:none;">
+                <div class="map-header">
+                    <h2>中国旅行地图</h2>
+                    <p>点击省份查看当地帖子</p>
+                </div>
+                <div class="map-container" id="mapContainer"></div>
+            </div>
+        </main>
     </div>
 
     <footer class="footer">
@@ -72,6 +101,7 @@
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/china-map.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

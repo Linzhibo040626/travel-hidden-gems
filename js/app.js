@@ -9,7 +9,45 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPosts();
     setupFilters();
     setupSearch();
+
+    const mapContainer = document.getElementById('mapContainer');
+    if (mapContainer && typeof renderChinaMap === 'function') {
+        renderChinaMap(mapContainer);
+    }
 });
+
+function switchView(view) {
+    const postsView = document.getElementById('viewPosts');
+    const mapView = document.getElementById('viewMap');
+    const btnPosts = document.getElementById('btnPosts');
+    const btnMap = document.getElementById('btnMap');
+
+    if (view === 'posts') {
+        postsView.style.display = 'block';
+        mapView.style.display = 'none';
+        btnPosts.classList.add('active');
+        btnMap.classList.remove('active');
+    } else {
+        postsView.style.display = 'none';
+        mapView.style.display = 'block';
+        btnPosts.classList.remove('active');
+        btnMap.classList.add('active');
+    }
+
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
 
 async function loadPosts() {
     const params = {
