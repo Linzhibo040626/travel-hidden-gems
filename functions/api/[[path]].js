@@ -1,5 +1,26 @@
 import { json, hashPassword, createToken, verifyToken, getUser, getSecret } from './_helpers.js';
 
+let migrated = false;
+async function runMigrations(env) {
+    if (migrated) return;
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT ''").run();
+    } catch {}
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN qq TEXT DEFAULT ''").run();
+    } catch {}
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''").run();
+    } catch {}
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''").run();
+    } catch {}
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''").run();
+    } catch {}
+    migrated = true;
+}
+
 export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
@@ -8,6 +29,8 @@ export async function onRequest(context) {
     if (request.method === 'OPTIONS') {
         return json({});
     }
+
+    await runMigrations(env);
 
     try {
         // Auth routes
