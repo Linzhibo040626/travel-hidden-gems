@@ -42,16 +42,43 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="region">地区</label>
-                    <select id="region" required>
-                        <option value="">请选择地区</option>
-                        <option value="华东">华东</option>
-                        <option value="华南">华南</option>
-                        <option value="华北">华北</option>
-                        <option value="西南">西南</option>
-                        <option value="西北">西北</option>
-                        <option value="东北">东北</option>
-                        <option value="华中">华中</option>
+                    <label for="province">省份</label>
+                    <select id="province" required>
+                        <option value="">请选择省份</option>
+                        <option value="北京">北京</option>
+                        <option value="天津">天津</option>
+                        <option value="上海">上海</option>
+                        <option value="重庆">重庆</option>
+                        <option value="河北">河北</option>
+                        <option value="山西">山西</option>
+                        <option value="辽宁">辽宁</option>
+                        <option value="吉林">吉林</option>
+                        <option value="黑龙江">黑龙江</option>
+                        <option value="江苏">江苏</option>
+                        <option value="浙江">浙江</option>
+                        <option value="安徽">安徽</option>
+                        <option value="福建">福建</option>
+                        <option value="江西">江西</option>
+                        <option value="山东">山东</option>
+                        <option value="河南">河南</option>
+                        <option value="湖北">湖北</option>
+                        <option value="湖南">湖南</option>
+                        <option value="广东">广东</option>
+                        <option value="广西">广西</option>
+                        <option value="海南">海南</option>
+                        <option value="四川">四川</option>
+                        <option value="贵州">贵州</option>
+                        <option value="云南">云南</option>
+                        <option value="西藏">西藏</option>
+                        <option value="陕西">陕西</option>
+                        <option value="甘肃">甘肃</option>
+                        <option value="青海">青海</option>
+                        <option value="宁夏">宁夏</option>
+                        <option value="新疆">新疆</option>
+                        <option value="内蒙古">内蒙古</option>
+                        <option value="台湾">台湾</option>
+                        <option value="香港">香港</option>
+                        <option value="澳门">澳门</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -83,8 +110,13 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="content">详细介绍</label>
-                <textarea id="content" required placeholder="分享你的旅行体验、交通方式、注意事项等..." rows="8"></textarea>
+                <label>详细介绍</label>
+                <div class="content-block-editor" id="blockEditor">
+                    <div class="content-block" data-type="text">
+                        <textarea placeholder="分享你的旅行体验、交通方式、注意事项等..." rows="4"></textarea>
+                        <button type="button" class="insert-image-btn" onclick="insertImageBlock(this)">+ 插入图片</button>
+                    </div>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary">发布推荐</button>
         </form>
@@ -156,20 +188,100 @@
             return [];
         }
 
+        function insertImageBlock(btn) {
+            const currentBlock = btn.closest('.content-block');
+            const newImageBlock = document.createElement('div');
+            newImageBlock.className = 'content-block';
+            newImageBlock.dataset.type = 'image';
+            newImageBlock.innerHTML = `
+                <div class="block-image-upload">
+                    <input type="file" accept="image/*" onchange="handleBlockImage(this)">
+                    <div class="block-image-preview"></div>
+                </div>
+                <button type="button" class="block-remove-btn" onclick="removeBlock(this)">删除图片</button>
+            `;
+            const newTextBlock = document.createElement('div');
+            newTextBlock.className = 'content-block';
+            newTextBlock.dataset.type = 'text';
+            newTextBlock.innerHTML = `
+                <textarea placeholder="继续输入文字..." rows="4"></textarea>
+                <button type="button" class="insert-image-btn" onclick="insertImageBlock(this)">+ 插入图片</button>
+            `;
+            currentBlock.after(newImageBlock);
+            newImageBlock.after(newTextBlock);
+        }
+
+        function handleBlockImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('图片不能超过2MB', 'error');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = input.closest('.block-image-upload').querySelector('.block-image-preview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="预览">`;
+                preview.dataset.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeBlock(btn) {
+            const block = btn.closest('.content-block');
+            const editor = document.getElementById('blockEditor');
+            const blocks = editor.querySelectorAll('.content-block');
+            // merge adjacent text blocks if removing image between them
+            const prev = block.previousElementSibling;
+            const next = block.nextElementSibling;
+            if (prev && next && prev.dataset.type === 'text' && next.dataset.type === 'text') {
+                const prevTA = prev.querySelector('textarea');
+                const nextTA = next.querySelector('textarea');
+                prevTA.value = prevTA.value + '\n' + nextTA.value;
+                next.remove();
+            }
+            block.remove();
+        }
+
+        function getContentBlocks() {
+            const editor = document.getElementById('blockEditor');
+            const blocks = editor.querySelectorAll('.content-block');
+            const result = [];
+            blocks.forEach(b => {
+                if (b.dataset.type === 'text') {
+                    const val = b.querySelector('textarea').value.trim();
+                    if (val) result.push({ type: 'text', value: val });
+                } else if (b.dataset.type === 'image') {
+                    const preview = b.querySelector('.block-image-preview');
+                    const src = preview?.dataset?.src;
+                    if (src) result.push({ type: 'image', value: src });
+                }
+            });
+            return result;
+        }
+
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const images = getImages();
+            const contentBlocks = getContentBlocks();
+
+            if (contentBlocks.length === 0) {
+                showToast('请填写内容', 'error');
+                return;
+            }
+
             const data = {
                 title: document.getElementById('title').value.trim(),
                 location: document.getElementById('location').value.trim(),
                 category: document.getElementById('category').value,
-                region: document.getElementById('region').value,
+                region: document.getElementById('province').value,
                 season: document.getElementById('season').value,
                 images: images,
-                content: document.getElementById('content').value.trim()
+                content: JSON.stringify(contentBlocks)
             };
 
-            if (!data.title || !data.location || !data.category || !data.region || !data.content) {
+            if (!data.title || !data.location || !data.category || !data.region) {
                 showToast('请填写必填项', 'error');
                 return;
             }

@@ -66,7 +66,7 @@ function toggleSidebar() {
 async function loadPosts() {
     const params = {
         category: document.getElementById('filterCategory')?.value || '',
-        region: document.getElementById('filterRegion')?.value || '',
+        region: document.getElementById('filterProvince')?.value || '',
         season: document.getElementById('filterSeason')?.value || '',
         sort: document.getElementById('filterSort')?.value || ''
     };
@@ -130,13 +130,22 @@ function renderPosts(posts) {
 }
 
 function setupFilters() {
-    const filters = ['filterCategory', 'filterRegion', 'filterSeason', 'filterSort'];
+    const filters = ['filterCategory', 'filterProvince', 'filterSeason', 'filterSort'];
     filters.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', loadPosts);
         }
     });
+}
+
+function filterByProvince(name) {
+    const select = document.getElementById('filterProvince');
+    if (select) {
+        select.value = name;
+    }
+    loadPosts();
+    switchView('posts');
 }
 
 let currentSlide = 0;

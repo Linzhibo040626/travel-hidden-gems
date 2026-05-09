@@ -474,10 +474,6 @@ function selectProvince(name) {
     document.querySelectorAll('.province-path').forEach(p => p.classList.remove('active'));
     document.querySelector(`[data-province="${name}"]`)?.classList.add('active');
 
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.value = name;
-    loadPosts();
-    switchView('posts');
-
+    filterByProvince(name);
     showToast(`正在查看：${name}`, 'success');
 }

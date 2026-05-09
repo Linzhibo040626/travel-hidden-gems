@@ -46,15 +46,43 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="editRegion">地区</label>
-                        <select id="editRegion" required>
-                            <option value="华东">华东</option>
-                            <option value="华南">华南</option>
-                            <option value="华北">华北</option>
-                            <option value="西南">西南</option>
-                            <option value="西北">西北</option>
-                            <option value="东北">东北</option>
-                            <option value="华中">华中</option>
+                        <label for="editProvince">省份</label>
+                        <select id="editProvince" required>
+                            <option value="">请选择省份</option>
+                            <option value="北京">北京</option>
+                            <option value="天津">天津</option>
+                            <option value="上海">上海</option>
+                            <option value="重庆">重庆</option>
+                            <option value="河北">河北</option>
+                            <option value="山西">山西</option>
+                            <option value="辽宁">辽宁</option>
+                            <option value="吉林">吉林</option>
+                            <option value="黑龙江">黑龙江</option>
+                            <option value="江苏">江苏</option>
+                            <option value="浙江">浙江</option>
+                            <option value="安徽">安徽</option>
+                            <option value="福建">福建</option>
+                            <option value="江西">江西</option>
+                            <option value="山东">山东</option>
+                            <option value="河南">河南</option>
+                            <option value="湖北">湖北</option>
+                            <option value="湖南">湖南</option>
+                            <option value="广东">广东</option>
+                            <option value="广西">广西</option>
+                            <option value="海南">海南</option>
+                            <option value="四川">四川</option>
+                            <option value="贵州">贵州</option>
+                            <option value="云南">云南</option>
+                            <option value="西藏">西藏</option>
+                            <option value="陕西">陕西</option>
+                            <option value="甘肃">甘肃</option>
+                            <option value="青海">青海</option>
+                            <option value="宁夏">宁夏</option>
+                            <option value="新疆">新疆</option>
+                            <option value="内蒙古">内蒙古</option>
+                            <option value="台湾">台湾</option>
+                            <option value="香港">香港</option>
+                            <option value="澳门">澳门</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -75,8 +103,9 @@
                     <div class="image-preview-list" id="editImagePreviewList"></div>
                 </div>
                 <div class="form-group">
-                    <label for="editContent">详细介绍</label>
-                    <textarea id="editContent" required rows="6"></textarea>
+                    <label>详细介绍</label>
+                    <div class="content-block-editor" id="editBlockEditor">
+                    </div>
                 </div>
                 <div style="display:flex;gap:12px;">
                     <button type="submit" class="btn btn-primary">保存修改</button>
@@ -95,8 +124,13 @@
             </div>
             <div class="comment-input-row">
                 <input type="text" id="commentInput" placeholder="写下你的评论...">
+                <label class="comment-image-btn" title="添加图片">
+                    &#128247;
+                    <input type="file" accept="image/*" id="commentImageInput" onchange="handleCommentImage(this)" style="display:none;">
+                </label>
                 <button class="btn btn-primary" id="commentBtn">发表</button>
             </div>
+            <div class="comment-image-preview" id="commentImagePreview"></div>
         </div>
         <div id="commentsList"></div>
     </div>
@@ -146,6 +180,19 @@
             }
         }
 
+        function renderContent(content) {
+            try {
+                const blocks = JSON.parse(content);
+                if (Array.isArray(blocks)) {
+                    return blocks.map(b => {
+                        if (b.type === 'image') return `<img class="post-content-image" src="${escapeHtml(b.value)}" alt="正文图片">`;
+                        return `<p>${escapeHtml(b.value)}</p>`;
+                    }).join('');
+                }
+            } catch {}
+            return `<p>${escapeHtml(content)}</p>`;
+        }
+
         function renderPost(post) {
             const detail = document.getElementById('postDetail');
             const images = getPostImages(post);
@@ -182,7 +229,7 @@
                         <span>&#128100; ${escapeHtml(post.nickname || '匿名')}</span>
                         <span>${formatTime(post.created_at)}</span>
                     </div>
-                    <div class="post-detail-content">${escapeHtml(post.content)}</div>
+                    <div class="post-detail-content">${renderContent(post.content)}</div>
                     <div class="post-actions">
                         <button class="like-btn ${post.user_liked ? 'liked' : ''}" id="likeBtn" onclick="toggleLike()">
                             &#10084; <span id="likeCount">${post.likes_count || 0}</span>
@@ -295,12 +342,120 @@
             document.getElementById('editTitle').value = currentPost.title;
             document.getElementById('editLocation').value = currentPost.location;
             document.getElementById('editCategory').value = currentPost.category;
-            document.getElementById('editRegion').value = currentPost.region || '';
+            document.getElementById('editProvince').value = currentPost.region || '';
             document.getElementById('editSeason').value = currentPost.season || '';
-            document.getElementById('editContent').value = currentPost.content;
             editImages = getPostImages(currentPost).slice();
             renderEditPreviews();
+            initEditBlockEditor(currentPost.content);
             document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function initEditBlockEditor(content) {
+            const editor = document.getElementById('editBlockEditor');
+            let blocks = [];
+            try {
+                const parsed = JSON.parse(content);
+                if (Array.isArray(parsed)) blocks = parsed;
+            } catch {}
+            if (blocks.length === 0) {
+                blocks = [{ type: 'text', value: content || '' }];
+            }
+            editor.innerHTML = '';
+            blocks.forEach((b, i) => {
+                if (b.type === 'image') {
+                    editor.appendChild(createEditImageBlock(b.value));
+                } else {
+                    editor.appendChild(createEditTextBlock(b.value, true));
+                }
+            });
+            const lastBlock = editor.lastElementChild;
+            if (!lastBlock || lastBlock.dataset.type !== 'text') {
+                editor.appendChild(createEditTextBlock('', true));
+            }
+        }
+
+        function createEditTextBlock(value, withBtn) {
+            const div = document.createElement('div');
+            div.className = 'content-block';
+            div.dataset.type = 'text';
+            div.innerHTML = `
+                <textarea placeholder="输入文字..." rows="4">${escapeHtml(value)}</textarea>
+                <button type="button" class="insert-image-btn" onclick="insertEditImageBlock(this)">+ 插入图片</button>
+            `;
+            return div;
+        }
+
+        function createEditImageBlock(src) {
+            const div = document.createElement('div');
+            div.className = 'content-block';
+            div.dataset.type = 'image';
+            div.innerHTML = `
+                <div class="block-image-upload">
+                    <input type="file" accept="image/*" onchange="handleEditBlockImage(this)" ${src ? 'style="display:none;"' : ''}>
+                    <div class="block-image-preview" ${src ? `data-src="${escapeHtml(src)}"` : ''}>${src ? `<img src="${escapeHtml(src)}" alt="预览">` : ''}</div>
+                </div>
+                <button type="button" class="block-remove-btn" onclick="removeEditBlock(this)">删除图片</button>
+            `;
+            return div;
+        }
+
+        function insertEditImageBlock(btn) {
+            const currentBlock = btn.closest('.content-block');
+            const editor = document.getElementById('editBlockEditor');
+            const imgBlock = createEditImageBlock('');
+            imgBlock.querySelector('input[type="file"]').style.display = '';
+            const textBlock = createEditTextBlock('', true);
+            currentBlock.after(imgBlock);
+            imgBlock.after(textBlock);
+        }
+
+        function handleEditBlockImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('图片不能超过2MB', 'error');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = input.closest('.block-image-upload').querySelector('.block-image-preview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="预览">`;
+                preview.dataset.src = e.target.result;
+                input.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeEditBlock(btn) {
+            const block = btn.closest('.content-block');
+            const editor = document.getElementById('editBlockEditor');
+            const prev = block.previousElementSibling;
+            const next = block.nextElementSibling;
+            if (prev && next && prev.dataset.type === 'text' && next.dataset.type === 'text') {
+                const prevTA = prev.querySelector('textarea');
+                const nextTA = next.querySelector('textarea');
+                prevTA.value = prevTA.value + '\n' + nextTA.value;
+                next.remove();
+            }
+            block.remove();
+        }
+
+        function getEditContentBlocks() {
+            const editor = document.getElementById('editBlockEditor');
+            const blocks = editor.querySelectorAll('.content-block');
+            const result = [];
+            blocks.forEach(b => {
+                if (b.dataset.type === 'text') {
+                    const val = b.querySelector('textarea').value.trim();
+                    if (val) result.push({ type: 'text', value: val });
+                } else if (b.dataset.type === 'image') {
+                    const preview = b.querySelector('.block-image-preview');
+                    const src = preview?.dataset?.src;
+                    if (src) result.push({ type: 'image', value: src });
+                }
+            });
+            return result;
         }
 
         function closeEditModal() {
@@ -346,16 +501,21 @@
 
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const contentBlocks = getEditContentBlocks();
+            if (contentBlocks.length === 0) {
+                showToast('请填写内容', 'error');
+                return;
+            }
             const data = {
                 title: document.getElementById('editTitle').value.trim(),
                 location: document.getElementById('editLocation').value.trim(),
                 category: document.getElementById('editCategory').value,
-                region: document.getElementById('editRegion').value,
+                region: document.getElementById('editProvince').value,
                 season: document.getElementById('editSeason').value,
                 images: editImages,
-                content: document.getElementById('editContent').value.trim()
+                content: JSON.stringify(contentBlocks)
             };
-            if (!data.title || !data.location || !data.category || !data.content) {
+            if (!data.title || !data.location || !data.category) {
                 showToast('请填写必填项', 'error');
                 return;
             }
@@ -383,6 +543,46 @@
             document.getElementById('replyHint').style.display = 'none';
         }
 
+        let commentImageData = null;
+
+        function handleCommentImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('图片不能超过2MB', 'error');
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                commentImageData = e.target.result;
+                document.getElementById('commentImagePreview').innerHTML = `
+                    <img src="${commentImageData}" alt="预览">
+                    <button type="button" onclick="removeCommentImage()">&#10005;</button>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCommentImage() {
+            commentImageData = null;
+            document.getElementById('commentImagePreview').innerHTML = '';
+            document.getElementById('commentImageInput').value = '';
+        }
+
+        function renderCommentContent(content) {
+            try {
+                const parsed = JSON.parse(content);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    let html = '';
+                    if (parsed.text) html += `<p class="comment-text">${escapeHtml(parsed.text)}</p>`;
+                    if (parsed.image) html += `<img class="comment-image" src="${escapeHtml(parsed.image)}" alt="评论图片">`;
+                    return html;
+                }
+            } catch {}
+            return `<p class="comment-text">${escapeHtml(content)}</p>`;
+        }
+
         async function loadComments() {
             try {
                 const comments = await API.getComments(postId);
@@ -398,7 +598,7 @@
                                 ${c.reply_to_nickname ? `<span class="comment-reply-tag">回复 @${escapeHtml(c.reply_to_nickname)}</span>` : ''}
                                 <span class="comment-time">${formatTime(c.created_at)}</span>
                             </div>
-                            <p class="comment-text">${escapeHtml(c.content)}</p>
+                            ${renderCommentContent(c.content)}
                             ${isLoggedIn ? `<button class="comment-reply-btn" onclick="setReply(${c.id}, '${escapeHtml(c.nickname || c.username)}')">回复</button>` : ''}
                         </div>
                     `).join('');
@@ -414,12 +614,20 @@
 
         document.getElementById('commentBtn').addEventListener('click', async () => {
             const input = document.getElementById('commentInput');
-            const content = input.value.trim();
-            if (!content) return;
+            const text = input.value.trim();
+            if (!text && !commentImageData) return;
+
+            let content;
+            if (commentImageData) {
+                content = JSON.stringify({ text: text, image: commentImageData });
+            } else {
+                content = text;
+            }
 
             try {
                 await API.addComment(postId, content, replyTo);
                 input.value = '';
+                removeCommentImage();
                 cancelReply();
                 loadComments();
                 showToast('评论成功', 'success');
