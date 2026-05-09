@@ -19,9 +19,28 @@ export async function hashPassword(password) {
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function toBase64(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function fromBase64(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+}
+
 export async function createToken(payload, secret) {
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const body = btoa(JSON.stringify({ ...payload, exp: Date.now() + 7 * 24 * 3600 * 1000 }));
+    const header = toBase64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const body = toBase64(JSON.stringify({ ...payload, exp: Date.now() + 7 * 24 * 3600 * 1000 }));
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
         'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
@@ -43,7 +62,7 @@ export async function verifyToken(token, secret) {
         const signatureBytes = Uint8Array.from(atob(parts[2]), c => c.charCodeAt(0));
         const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(parts[0] + '.' + parts[1]));
         if (!valid) return null;
-        const payload = JSON.parse(atob(parts[1]));
+        const payload = JSON.parse(fromBase64(parts[1]));
         if (payload.exp < Date.now()) return null;
         return payload;
     } catch {
