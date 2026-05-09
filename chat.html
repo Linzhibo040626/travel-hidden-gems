@@ -62,6 +62,7 @@
 
         let currentChatUser = null;
         let pollTimer = null;
+        let cachedFriends = null;
         const currentUser = Auth.getUser();
 
         const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✈️','🏔️','🌊','🌸','🍜','☀️','🌙','⭐','🎵','📷','🗺️'];
@@ -119,17 +120,17 @@
 
         async function loadConversations() {
             try {
-                const [convos, friends] = await Promise.all([
-                    API.getConversations(),
-                    API.getFriends()
-                ]);
+                if (!cachedFriends) {
+                    cachedFriends = await API.getFriends();
+                }
+                const convos = await API.getConversations();
                 const list = document.getElementById('chatList');
                 const empty = document.getElementById('emptyChats');
 
                 const convoMap = {};
                 convos.forEach(c => { convoMap[c.user_id] = c; });
 
-                const allItems = friends.map(f => {
+                const allItems = cachedFriends.map(f => {
                     const c = convoMap[f.id];
                     return {
                         user_id: f.id,
@@ -222,8 +223,8 @@
         function startPolling() {
             pollTimer = setInterval(() => {
                 if (currentChatUser) loadMessages();
-                loadConversations();
-            }, 5000);
+                else loadConversations();
+            }, 10000);
         }
 
         // Check URL param for direct chat

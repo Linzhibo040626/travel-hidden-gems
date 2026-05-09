@@ -109,13 +109,14 @@ document.addEventListener('DOMContentLoaded', setupGlobalSearch);
 
 async function updateUnreadBadges() {
     if (!Auth.isLoggedIn()) return;
+    const msgBadge = document.getElementById('badgeMessages');
+    const notifBadge = document.getElementById('badgeNotifications');
+    if (!msgBadge && !notifBadge) return;
     try {
         const [msgData, notifData] = await Promise.all([
             API.getMessagesUnreadCount(),
             API.getNotificationsUnreadCount()
         ]);
-        const msgBadge = document.getElementById('badgeMessages');
-        const notifBadge = document.getElementById('badgeNotifications');
         if (msgBadge) {
             if (msgData.count > 0) {
                 msgBadge.textContent = msgData.count > 99 ? '99+' : msgData.count;

@@ -3,64 +3,21 @@ import { json, hashPassword, createToken, verifyToken, getUser, getSecret } from
 let migrated = false;
 async function runMigrations(env) {
     if (migrated) return;
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN qq TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''").run();
-    } catch {}
-    try {
-        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS sms_codes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT NOT NULL,
-            code TEXT NOT NULL,
-            expires_at INTEGER NOT NULL,
-            used INTEGER DEFAULT 0
-        )`).run();
-    } catch {}
-    try {
-        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS friendships (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            friend_id INTEGER NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(user_id, friend_id)
-        )`).run();
-    } catch {}
-    try {
-        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_id INTEGER NOT NULL,
-            receiver_id INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            is_read INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`).run();
-    } catch {}
-    try {
-        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            type TEXT NOT NULL,
-            content TEXT NOT NULL,
-            related_id INTEGER,
-            is_read INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`).run();
-    } catch {}
+    const stmts = [
+        env.DB.prepare("ALTER TABLE users ADD COLUMN nickname TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE users ADD COLUMN qq TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''"),
+        env.DB.prepare("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''"),
+    ];
+    for (const s of stmts) { try { await s.run(); } catch {} }
+    await env.DB.batch([
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS sms_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, code TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0)`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS friendships (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, friend_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, friend_id))`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER NOT NULL, receiver_id INTEGER NOT NULL, content TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type TEXT NOT NULL, content TEXT NOT NULL, related_id INTEGER, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
+    ]);
     migrated = true;
 }
 
