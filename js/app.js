@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     Auth.updateNav();
     loadPosts();
     setupFilters();
+    initCarousel();
 
     const mapContainer = document.getElementById('mapContainer');
     if (mapContainer && typeof renderChinaMap === 'function') {
@@ -134,4 +135,40 @@ function setupFilters() {
             el.addEventListener('change', loadPosts);
         }
     });
+}
+
+let currentSlide = 0;
+let carouselTimer = null;
+
+function initCarousel() {
+    const track = document.getElementById('carouselTrack');
+    if (!track) return;
+    carouselTimer = setInterval(nextSlide, 4000);
+}
+
+function goToSlide(index) {
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    if (!slides.length) return;
+    currentSlide = index;
+    slides.forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+    dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    resetCarouselTimer();
+}
+
+function nextSlide() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (!slides.length) return;
+    goToSlide((currentSlide + 1) % slides.length);
+}
+
+function prevSlide() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (!slides.length) return;
+    goToSlide((currentSlide - 1 + slides.length) % slides.length);
+}
+
+function resetCarouselTimer() {
+    if (carouselTimer) clearInterval(carouselTimer);
+    carouselTimer = setInterval(nextSlide, 4000);
 }
