@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPosts();
     setupFilters();
     initCarousel();
+    loadCheckinStatus();
 
     const mapContainer = document.getElementById('mapContainer');
     if (mapContainer && typeof renderChinaMap === 'function') {
@@ -172,4 +173,82 @@ function prevSlide() {
 function resetCarouselTimer() {
     if (carouselTimer) clearInterval(carouselTimer);
     carouselTimer = setInterval(nextSlide, 4000);
+}
+
+// --- Checkin & Card Draw ---
+async function loadCheckinStatus() {
+    const panel = document.getElementById('checkinPanel');
+    if (!panel) return;
+    if (!Auth.isLoggedIn()) {
+        document.getElementById('checkinBtn').textContent = '登录后签到';
+        document.getElementById('checkinBtn').disabled = true;
+        return;
+    }
+    try {
+        const status = await API.getCheckinStatus();
+        document.getElementById('streakCount').textContent = status.streak || 0;
+        document.getElementById('availableDraws').textContent = status.available_draws || 0;
+        if (status.checked_in_today) {
+            const btn = document.getElementById('checkinBtn');
+            btn.textContent = '今日已签到';
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        }
+    } catch {}
+}
+
+async function doCheckin() {
+    if (!Auth.isLoggedIn()) {
+        showToast('请先登录', 'error');
+        return;
+    }
+    try {
+        const result = await API.checkin();
+        document.getElementById('streakCount').textContent = result.streak || 0;
+        document.getElementById('availableDraws').textContent = result.available_draws || 0;
+        const btn = document.getElementById('checkinBtn');
+        btn.textContent = '今日已签到';
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        showToast(`签到成功！获得${result.draws_earned}次抽卡`, 'success');
+        openDrawModal();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+let drawnResult = null;
+
+async function openDrawModal() {
+    try {
+        drawnResult = await API.drawCard();
+        document.getElementById('drawnCity').textContent = drawnResult.city;
+        document.getElementById('drawnProvince').textContent = drawnResult.province;
+        document.getElementById('drawResultHint').textContent = '点击卡片翻转';
+        document.getElementById('closeDrawBtn').style.display = 'none';
+        document.getElementById('flipCardInner').classList.remove('flipped');
+        document.getElementById('cardDrawModal').style.display = 'flex';
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function flipTheCard() {
+    const inner = document.getElementById('flipCardInner');
+    if (inner.classList.contains('flipped')) return;
+    inner.classList.add('flipped');
+    setTimeout(() => {
+        let hint = drawnResult.is_duplicate ? '重复卡！可在集卡大赛中分解为碎片' : '新城市卡！';
+        if (drawnResult.new_badge) {
+            hint += ` 🎉 解锁徽章：${drawnResult.new_badge}`;
+        }
+        document.getElementById('drawResultHint').textContent = hint;
+        document.getElementById('closeDrawBtn').style.display = 'inline-block';
+    }, 600);
+}
+
+function closeDrawModal() {
+    document.getElementById('cardDrawModal').style.display = 'none';
+    const draws = parseInt(document.getElementById('availableDraws').textContent) - 1;
+    document.getElementById('availableDraws').textContent = Math.max(0, draws);
 }

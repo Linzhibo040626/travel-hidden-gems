@@ -1,5 +1,85 @@
 import { json, hashPassword, createToken, verifyToken, getUser, getSecret } from './_helpers.js';
 
+// --- City Card Data ---
+const TOP_50_CITIES = [
+    { city: '北京', province: '北京' }, { city: '上海', province: '上海' },
+    { city: '广州', province: '广东' }, { city: '深圳', province: '广东' },
+    { city: '成都', province: '四川' }, { city: '杭州', province: '浙江' },
+    { city: '重庆', province: '重庆' }, { city: '武汉', province: '湖北' },
+    { city: '西安', province: '陕西' }, { city: '苏州', province: '江苏' },
+    { city: '南京', province: '江苏' }, { city: '天津', province: '天津' },
+    { city: '长沙', province: '湖南' }, { city: '郑州', province: '河南' },
+    { city: '东莞', province: '广东' }, { city: '青岛', province: '山东' },
+    { city: '昆明', province: '云南' }, { city: '大连', province: '辽宁' },
+    { city: '宁波', province: '浙江' }, { city: '厦门', province: '福建' },
+    { city: '沈阳', province: '辽宁' }, { city: '济南', province: '山东' },
+    { city: '哈尔滨', province: '黑龙江' }, { city: '福州', province: '福建' },
+    { city: '佛山', province: '广东' }, { city: '合肥', province: '安徽' },
+    { city: '无锡', province: '江苏' }, { city: '石家庄', province: '河北' },
+    { city: '南宁', province: '广西' }, { city: '贵阳', province: '贵州' },
+    { city: '太原', province: '山西' }, { city: '南昌', province: '江西' },
+    { city: '珠海', province: '广东' }, { city: '温州', province: '浙江' },
+    { city: '兰州', province: '甘肃' }, { city: '长春', province: '吉林' },
+    { city: '烟台', province: '山东' }, { city: '泉州', province: '福建' },
+    { city: '常州', province: '江苏' }, { city: '徐州', province: '江苏' },
+    { city: '桂林', province: '广西' }, { city: '三亚', province: '海南' },
+    { city: '丽江', province: '云南' }, { city: '拉萨', province: '西藏' },
+    { city: '乌鲁木齐', province: '新疆' }, { city: '呼和浩特', province: '内蒙古' },
+    { city: '海口', province: '海南' }, { city: '银川', province: '宁夏' },
+    { city: '西宁', province: '青海' }, { city: '洛阳', province: '河南' },
+];
+
+const ALL_CITIES_BY_PROVINCE = {
+    '北京': ['北京'], '天津': ['天津'], '上海': ['上海'], '重庆': ['重庆'],
+    '河北': ['石家庄','唐山','秦皇岛','邯郸','邢台','保定','张家口','承德','沧州','廊坊','衡水'],
+    '山西': ['太原','大同','阳泉','长治','晋城','朔州','晋中','运城','忻州','临汾','吕梁'],
+    '内蒙古': ['呼和浩特','包头','乌海','赤峰','通辽','鄂尔多斯','呼伦贝尔','巴彦淖尔','乌兰察布','兴安盟','锡林郭勒盟','阿拉善盟'],
+    '辽宁': ['沈阳','大连','鞍山','抚顺','本溪','丹东','锦州','营口','阜新','辽阳','盘锦','铁岭','朝阳','葫芦岛'],
+    '吉林': ['长春','吉林','四平','辽源','通化','白山','松原','白城','延边'],
+    '黑龙江': ['哈尔滨','齐齐哈尔','鸡西','鹤岗','双鸭山','大庆','伊春','佳木斯','七台河','牡丹江','黑河','绥化','大兴安岭'],
+    '江苏': ['南京','无锡','徐州','常州','苏州','南通','连云港','淮安','盐城','扬州','镇江','泰州','宿迁'],
+    '浙江': ['杭州','宁波','温州','嘉兴','湖州','绍兴','金华','衢州','舟山','台州','丽水'],
+    '安徽': ['合肥','芜湖','蚌埠','淮南','马鞍山','淮北','铜陵','安庆','黄山','滁州','阜阳','宿州','六安','亳州','池州','宣城'],
+    '福建': ['福州','厦门','莆田','三明','泉州','漳州','南平','龙岩','宁德'],
+    '江西': ['南昌','景德镇','萍乡','九江','新余','鹰潭','赣州','吉安','宜春','抚州','上饶'],
+    '山东': ['济南','青岛','淄博','枣庄','东营','烟台','潍坊','济宁','泰安','威海','日照','临沂','德州','聊城','滨州','菏泽'],
+    '河南': ['郑州','开封','洛阳','平顶山','安阳','鹤壁','新乡','焦作','濮阳','许昌','漯河','三门峡','南阳','商丘','信阳','周口','驻马店'],
+    '湖北': ['武汉','黄石','十堰','宜昌','襄阳','鄂州','荆门','孝感','荆州','黄冈','咸宁','随州','恩施'],
+    '湖南': ['长沙','株洲','湘潭','衡阳','邵阳','岳阳','常德','张家界','益阳','郴州','永州','怀化','娄底','湘西'],
+    '广东': ['广州','韶关','深圳','珠海','汕头','佛山','江门','湛江','茂名','肇庆','惠州','梅州','汕尾','河源','阳江','清远','东莞','中山','潮州','揭阳','云浮'],
+    '广西': ['南宁','柳州','桂林','梧州','北海','防城港','钦州','贵港','玉林','百色','贺州','河池','来宾','崇左'],
+    '海南': ['海口','三亚','三沙','儋州','五指山','琼海','文昌','万宁','东方','澄迈','临高','定安','屯昌','昌江','白沙','琼中','保亭','陵水','乐东'],
+    '四川': ['成都','自贡','攀枝花','泸州','德阳','绵阳','广元','遂宁','内江','乐山','南充','眉山','宜宾','广安','达州','雅安','巴中','资阳','阿坝','甘孜','凉山'],
+    '贵州': ['贵阳','六盘水','遵义','安顺','毕节','铜仁','黔西南','黔东南','黔南'],
+    '云南': ['昆明','曲靖','玉溪','保山','昭通','丽江','普洱','临沧','楚雄','红河','文山','西双版纳','大理','德宏','怒江','迪庆'],
+    '西藏': ['拉萨','日喀则','昌都','林芝','山南','那曲','阿里'],
+    '陕西': ['西安','铜川','宝鸡','咸阳','渭南','延安','汉中','榆林','安康','商洛'],
+    '甘肃': ['兰州','嘉峪关','金昌','白银','天水','武威','张掖','平凉','酒泉','庆阳','定西','陇南','临夏','甘南'],
+    '青海': ['西宁','海东','海北','黄南','海南州','果洛','玉树','海西'],
+    '宁夏': ['银川','石嘴山','吴忠','固原','中卫'],
+    '新疆': ['乌鲁木齐','克拉玛依','吐鲁番','哈密','昌吉','博尔塔拉','巴音郭楞','阿克苏','克孜勒苏','喀什','和田','伊犁','塔城','阿勒泰'],
+    '台湾': ['台湾'],
+    '香港': ['香港'],
+    '澳门': ['澳门'],
+};
+
+const TOP_50_SET = new Set(TOP_50_CITIES.map(c => c.city));
+const OTHER_CITIES = [];
+for (const [province, cities] of Object.entries(ALL_CITIES_BY_PROVINCE)) {
+    for (const city of cities) {
+        if (!TOP_50_SET.has(city)) {
+            OTHER_CITIES.push({ city, province });
+        }
+    }
+}
+
+function drawCity() {
+    if (Math.random() < 0.95) {
+        return TOP_50_CITIES[Math.floor(Math.random() * TOP_50_CITIES.length)];
+    }
+    return OTHER_CITIES[Math.floor(Math.random() * OTHER_CITIES.length)];
+}
+
 let migrated = false;
 async function runMigrations(env) {
     if (migrated) return;
@@ -21,6 +101,11 @@ async function runMigrations(env) {
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER NOT NULL, receiver_id INTEGER NOT NULL, content TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type TEXT NOT NULL, content TEXT NOT NULL, related_id INTEGER, is_read INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS favorites (id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, user_id INTEGER NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id, user_id))`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS checkins (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, checkin_date TEXT NOT NULL, streak INTEGER NOT NULL DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, checkin_date))`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_cards (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, city_name TEXT NOT NULL, province TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 1, first_drawn_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, city_name))`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_fragments (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL UNIQUE, count INTEGER NOT NULL DEFAULT 0)`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_badges (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, badge_type TEXT NOT NULL, badge_name TEXT NOT NULL, earned_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, badge_type, badge_name))`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS user_draws (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL UNIQUE, available_draws INTEGER NOT NULL DEFAULT 0)`),
     ]);
     migrated = true;
 }
@@ -140,6 +225,26 @@ export async function onRequest(context) {
         }
         if (path === '/api/notifications/unread-count' && request.method === 'GET') {
             return await handleNotificationsUnreadCount(request, env);
+        }
+
+        // Checkin & Card routes
+        if (path === '/api/checkin' && request.method === 'POST') {
+            return await handleCheckin(request, env);
+        }
+        if (path === '/api/checkin/status' && request.method === 'GET') {
+            return await handleCheckinStatus(request, env);
+        }
+        if (path === '/api/cards/draw' && request.method === 'POST') {
+            return await handleCardDraw(request, env);
+        }
+        if (path === '/api/cards/collection' && request.method === 'GET') {
+            return await handleGetCollection(request, env);
+        }
+        if (path === '/api/cards/decompose' && request.method === 'POST') {
+            return await handleDecompose(request, env);
+        }
+        if (path === '/api/cards/fragment-draw' && request.method === 'POST') {
+            return await handleFragmentDraw(request, env);
         }
 
         return json({ error: '未找到该接口' }, 404);
@@ -684,4 +789,218 @@ async function handleNotificationsUnreadCount(request, env) {
         .bind(user.id).first();
 
     return json({ count: result.count || 0 });
+}
+
+// --- Checkin & Card Handlers ---
+
+function getTodayDate() {
+    const now = new Date();
+    const beijing = new Date(now.getTime() + (now.getTimezoneOffset() + 480) * 60000);
+    return beijing.toISOString().split('T')[0];
+}
+
+function getYesterdayDate() {
+    const now = new Date();
+    const beijing = new Date(now.getTime() + (now.getTimezoneOffset() + 480) * 60000 - 86400000);
+    return beijing.toISOString().split('T')[0];
+}
+
+async function handleCheckin(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const today = getTodayDate();
+    const existing = await env.DB.prepare('SELECT id FROM checkins WHERE user_id = ? AND checkin_date = ?')
+        .bind(user.id, today).first();
+    if (existing) return json({ error: '今日已签到' }, 400);
+
+    const yesterday = getYesterdayDate();
+    const yesterdayCheckin = await env.DB.prepare('SELECT streak FROM checkins WHERE user_id = ? AND checkin_date = ?')
+        .bind(user.id, yesterday).first();
+    const streak = yesterdayCheckin ? yesterdayCheckin.streak + 1 : 1;
+
+    await env.DB.prepare('INSERT INTO checkins (user_id, checkin_date, streak) VALUES (?, ?, ?)')
+        .bind(user.id, today, streak).run();
+
+    let drawsEarned = 1;
+    if (streak % 3 === 0) drawsEarned = 2;
+
+    const drawsRow = await env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first();
+    if (drawsRow) {
+        await env.DB.prepare('UPDATE user_draws SET available_draws = available_draws + ? WHERE user_id = ?')
+            .bind(drawsEarned, user.id).run();
+    } else {
+        await env.DB.prepare('INSERT INTO user_draws (user_id, available_draws) VALUES (?, ?)')
+            .bind(user.id, drawsEarned).run();
+    }
+
+    const updated = await env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first();
+    return json({ streak, draws_earned: drawsEarned, available_draws: updated.available_draws });
+}
+
+async function handleCheckinStatus(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const today = getTodayDate();
+    const todayCheckin = await env.DB.prepare('SELECT streak FROM checkins WHERE user_id = ? AND checkin_date = ?')
+        .bind(user.id, today).first();
+
+    let streak = 0;
+    if (todayCheckin) {
+        streak = todayCheckin.streak;
+    } else {
+        const yesterday = getYesterdayDate();
+        const yc = await env.DB.prepare('SELECT streak FROM checkins WHERE user_id = ? AND checkin_date = ?')
+            .bind(user.id, yesterday).first();
+        if (yc) streak = yc.streak;
+    }
+
+    const drawsRow = await env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first();
+    return json({
+        checked_in_today: !!todayCheckin,
+        streak,
+        available_draws: drawsRow ? drawsRow.available_draws : 0
+    });
+}
+
+async function checkAndAwardBadges(userId, province, env) {
+    const provinceCities = ALL_CITIES_BY_PROVINCE[province];
+    if (!provinceCities) return null;
+
+    const collected = await env.DB.prepare(
+        'SELECT COUNT(DISTINCT city_name) as cnt FROM user_cards WHERE user_id = ? AND province = ?'
+    ).bind(userId, province).first();
+
+    if (collected.cnt >= provinceCities.length) {
+        const existingBadge = await env.DB.prepare(
+            'SELECT id FROM user_badges WHERE user_id = ? AND badge_type = ? AND badge_name = ?'
+        ).bind(userId, 'province', province).first();
+        if (!existingBadge) {
+            await env.DB.prepare('INSERT INTO user_badges (user_id, badge_type, badge_name) VALUES (?, ?, ?)')
+                .bind(userId, 'province', province).run();
+
+            const totalProvinces = Object.keys(ALL_CITIES_BY_PROVINCE).length;
+            const earnedProvinces = await env.DB.prepare(
+                "SELECT COUNT(*) as cnt FROM user_badges WHERE user_id = ? AND badge_type = 'province'"
+            ).bind(userId).first();
+            if (earnedProvinces.cnt >= totalProvinces) {
+                const nationalExists = await env.DB.prepare(
+                    "SELECT id FROM user_badges WHERE user_id = ? AND badge_type = 'national'"
+                ).bind(userId).first();
+                if (!nationalExists) {
+                    await env.DB.prepare("INSERT INTO user_badges (user_id, badge_type, badge_name) VALUES (?, 'national', '国章')")
+                        .bind(userId).run();
+                    return '国章';
+                }
+            }
+            return province + '省章';
+        }
+    }
+    return null;
+}
+
+async function performDraw(userId, env) {
+    const { city, province } = drawCity();
+
+    const existingCard = await env.DB.prepare('SELECT id, count FROM user_cards WHERE user_id = ? AND city_name = ?')
+        .bind(userId, city).first();
+
+    let isDuplicate = false;
+    if (existingCard) {
+        await env.DB.prepare('UPDATE user_cards SET count = count + 1 WHERE id = ?').bind(existingCard.id).run();
+        isDuplicate = true;
+    } else {
+        await env.DB.prepare('INSERT INTO user_cards (user_id, city_name, province) VALUES (?, ?, ?)')
+            .bind(userId, city, province).run();
+    }
+
+    const newBadge = await checkAndAwardBadges(userId, province, env);
+    return { city, province, is_duplicate: isDuplicate, new_badge: newBadge };
+}
+
+async function handleCardDraw(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const drawsRow = await env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first();
+    if (!drawsRow || drawsRow.available_draws < 1) {
+        return json({ error: '没有可用的抽卡次数' }, 400);
+    }
+
+    await env.DB.prepare('UPDATE user_draws SET available_draws = available_draws - 1 WHERE user_id = ?').bind(user.id).run();
+    const result = await performDraw(user.id, env);
+    const updated = await env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first();
+    return json({ ...result, available_draws: updated.available_draws });
+}
+
+async function handleGetCollection(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const [cards, fragments, badges, draws] = await Promise.all([
+        env.DB.prepare('SELECT city_name, province, count FROM user_cards WHERE user_id = ? ORDER BY province, city_name').bind(user.id).all(),
+        env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first(),
+        env.DB.prepare('SELECT badge_type, badge_name, earned_at FROM user_badges WHERE user_id = ?').bind(user.id).all(),
+        env.DB.prepare('SELECT available_draws FROM user_draws WHERE user_id = ?').bind(user.id).first(),
+    ]);
+
+    const provinceProgress = {};
+    for (const [prov, cities] of Object.entries(ALL_CITIES_BY_PROVINCE)) {
+        provinceProgress[prov] = { total: cities.length, collected: 0, cities };
+    }
+    for (const card of (cards.results || [])) {
+        if (provinceProgress[card.province]) {
+            provinceProgress[card.province].collected++;
+        }
+    }
+
+    return json({
+        cards: cards.results || [],
+        fragments: fragments ? fragments.count : 0,
+        badges: badges.results || [],
+        available_draws: draws ? draws.available_draws : 0,
+        province_progress: provinceProgress
+    });
+}
+
+async function handleDecompose(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const { city_name } = await request.json();
+    if (!city_name) return json({ error: '请指定城市' }, 400);
+
+    const card = await env.DB.prepare('SELECT id, count FROM user_cards WHERE user_id = ? AND city_name = ?')
+        .bind(user.id, city_name).first();
+    if (!card || card.count < 2) {
+        return json({ error: '该城市卡数量不足，无法分解' }, 400);
+    }
+
+    await env.DB.prepare('UPDATE user_cards SET count = count - 1 WHERE id = ?').bind(card.id).run();
+
+    const fragRow = await env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first();
+    if (fragRow) {
+        await env.DB.prepare('UPDATE user_fragments SET count = count + 1 WHERE user_id = ?').bind(user.id).run();
+    } else {
+        await env.DB.prepare('INSERT INTO user_fragments (user_id, count) VALUES (?, 1)').bind(user.id).run();
+    }
+
+    const updated = await env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first();
+    return json({ fragments_count: updated.count });
+}
+
+async function handleFragmentDraw(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const fragRow = await env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first();
+    if (!fragRow || fragRow.count < 3) {
+        return json({ error: '碎片不足，需要3个碎片' }, 400);
+    }
+
+    await env.DB.prepare('UPDATE user_fragments SET count = count - 3 WHERE user_id = ?').bind(user.id).run();
+    const result = await performDraw(user.id, env);
+    const updatedFrag = await env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first();
+    return json({ ...result, fragments_count: updatedFrag.count });
 }

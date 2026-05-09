@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集卡大赛 - 别处游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">
+            <img src="logo.svg" alt="别处游" class="nav-logo-img">
+            <span class="nav-logo-text">别处游</span>
+        </a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="activity-page">
+        <div class="activity-header">
+            <h1>集卡大赛</h1>
+            <p>收集中国城市卡，解锁省章与国章</p>
+        </div>
+
+        <div class="activity-stats">
+            <div class="stat-item">
+                <span class="stat-num" id="statDraws">0</span>
+                <span class="stat-label">可用抽卡</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num" id="statFragments">0</span>
+                <span class="stat-label">碎片</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num" id="statCards">0</span>
+                <span class="stat-label">已收集</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num" id="statBadges">0</span>
+                <span class="stat-label">徽章</span>
+            </div>
+        </div>
+
+        <div class="activity-actions">
+            <button class="btn btn-primary" id="drawBtn" onclick="doDraw()">抽卡</button>
+            <button class="btn btn-outline" id="fragmentDrawBtn" onclick="doFragmentDraw()">碎片抽卡 (3碎片)</button>
+        </div>
+
+        <div class="badges-section" id="badgesSection" style="display:none;">
+            <h2>我的徽章</h2>
+            <div class="badges-grid" id="badgesGrid"></div>
+        </div>
+
+        <div class="collection-section">
+            <h2>我的卡册</h2>
+            <div id="collectionContent"></div>
+        </div>
+    </div>
+
+    <div class="card-draw-modal" id="cardDrawModal" style="display:none;">
+        <div class="card-draw-content">
+            <div class="flip-card" id="flipCard" onclick="flipTheCard()">
+                <div class="flip-card-inner" id="flipCardInner">
+                    <div class="flip-card-front">?</div>
+                    <div class="flip-card-back">
+                        <p class="drawn-city" id="drawnCity"></p>
+                        <p class="drawn-province" id="drawnProvince"></p>
+                    </div>
+                </div>
+            </div>
+            <p class="draw-result-hint" id="drawResultHint">点击卡片翻转</p>
+            <button class="btn btn-primary" id="closeDrawBtn" style="display:none;" onclick="closeDrawModal()">收下</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>别处游 - 去别处，遇见不同</p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.updateNav();
+
+        if (!Auth.isLoggedIn()) {
+            showToast('请先登录', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1000);
+        }
+
+        let collectionData = null;
+
+        async function loadCollection() {
+            try {
+                collectionData = await API.getCollection();
+                renderStats();
+                renderBadges();
+                renderCollection();
+            } catch (err) {
+                showToast('加载失败', 'error');
+            }
+        }
+
+        function renderStats() {
+            document.getElementById('statDraws').textContent = collectionData.available_draws || 0;
+            document.getElementById('statFragments').textContent = collectionData.fragments || 0;
+            document.getElementById('statCards').textContent = collectionData.cards ? collectionData.cards.length : 0;
+            document.getElementById('statBadges').textContent = collectionData.badges ? collectionData.badges.length : 0;
+        }
+
+        function renderBadges() {
+            const section = document.getElementById('badgesSection');
+            const grid = document.getElementById('badgesGrid');
+            if (!collectionData.badges || collectionData.badges.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            section.style.display = 'block';
+            grid.innerHTML = collectionData.badges.map(b => `
+                <div class="badge-item">
+                    <span class="badge-icon">${b.badge_type === 'national' ? '&#127942;' : '&#127941;'}</span>
+                    <span class="badge-name">${escapeHtml(b.badge_name)}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderCollection() {
+            const container = document.getElementById('collectionContent');
+            const progress = collectionData.province_progress || {};
+            const cardMap = {};
+            if (collectionData.cards) {
+                collectionData.cards.forEach(c => { cardMap[c.city_name] = c; });
+            }
+
+            let html = '';
+            for (const [province, info] of Object.entries(progress)) {
+                const pct = info.total > 0 ? Math.round((info.collected / info.total) * 100) : 0;
+                html += `<div class="province-group">
+                    <div class="province-header">
+                        <span class="province-name">${escapeHtml(province)}</span>
+                        <span class="province-progress">${info.collected}/${info.total}</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                    </div>
+                    <div class="city-cards">`;
+
+                for (const city of info.cities) {
+                    const card = cardMap[city];
+                    if (card) {
+                        const dup = card.count > 1;
+                        html += `<div class="city-card collected${dup ? ' duplicate' : ''}">
+                            <span class="city-name">${escapeHtml(city)}</span>
+                            ${dup ? `<span class="card-count">x${card.count}</span><button class="decompose-btn" onclick="decompose('${escapeHtml(city)}')">分解</button>` : ''}
+                        </div>`;
+                    } else {
+                        html += `<div class="city-card locked"><span class="city-name">${escapeHtml(city)}</span></div>`;
+                    }
+                }
+                html += `</div></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        let drawnResult = null;
+
+        async function doDraw() {
+            try {
+                drawnResult = await API.drawCard();
+                showDrawModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function doFragmentDraw() {
+            try {
+                drawnResult = await API.fragmentDraw();
+                showDrawModal();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function showDrawModal() {
+            document.getElementById('drawnCity').textContent = drawnResult.city;
+            document.getElementById('drawnProvince').textContent = drawnResult.province;
+            document.getElementById('drawResultHint').textContent = '点击卡片翻转';
+            document.getElementById('closeDrawBtn').style.display = 'none';
+            document.getElementById('flipCardInner').classList.remove('flipped');
+            document.getElementById('cardDrawModal').style.display = 'flex';
+        }
+
+        function flipTheCard() {
+            const inner = document.getElementById('flipCardInner');
+            if (inner.classList.contains('flipped')) return;
+            inner.classList.add('flipped');
+            setTimeout(() => {
+                let hint = drawnResult.is_duplicate ? '重复卡！可分解为碎片' : '新城市卡！';
+                if (drawnResult.new_badge) hint += ` 解锁徽章：${drawnResult.new_badge}`;
+                document.getElementById('drawResultHint').textContent = hint;
+                document.getElementById('closeDrawBtn').style.display = 'inline-block';
+            }, 600);
+        }
+
+        function closeDrawModal() {
+            document.getElementById('cardDrawModal').style.display = 'none';
+            loadCollection();
+        }
+
+        async function decompose(cityName) {
+            try {
+                await API.decomposeCard(cityName);
+                showToast('分解成功，获得1碎片', 'success');
+                loadCollection();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        loadCollection();
+    </script>
+</body>
+</html>

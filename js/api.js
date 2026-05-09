@@ -159,5 +159,25 @@ const API = {
     },
     async getNotificationsUnreadCount() {
         return this.request('/notifications/unread-count');
+    },
+
+    // Checkin & Cards
+    async checkin() {
+        return this.request('/checkin', { method: 'POST' });
+    },
+    async getCheckinStatus() {
+        return this.request('/checkin/status');
+    },
+    async drawCard() {
+        return this.request('/cards/draw', { method: 'POST' });
+    },
+    async getCollection() {
+        return this.request('/cards/collection');
+    },
+    async decomposeCard(cityName) {
+        return this.request('/cards/decompose', { method: 'POST', body: JSON.stringify({ city_name: cityName }) });
+    },
+    async fragmentDraw() {
+        return this.request('/cards/fragment-draw', { method: 'POST' });
     }
 };
