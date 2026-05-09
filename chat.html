@@ -63,6 +63,9 @@
         let currentChatUser = null;
         let pollTimer = null;
         let cachedFriends = null;
+        let lastMsgId = 0;
+        let lastConvoHash = '';
+        let polling = false;
         const currentUser = Auth.getUser();
 
         const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✈️','🏔️','🌊','🌸','🍜','☀️','🌙','⭐','🎵','📷','🗺️'];
@@ -101,7 +104,7 @@
                 if (!currentChatUser) return;
                 try {
                     await API.sendMessage(currentChatUser, '[img]' + e.target.result + '[/img]');
-                    await loadMessages();
+                    appendMyMessage('[img]' + e.target.result + '[/img]');
                 } catch (err) {
                     showToast(err.message, 'error');
                 }
@@ -118,12 +121,26 @@
             return escapeHtml(content);
         }
 
+        function appendMyMessage(content) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-bubble mine';
+            div.innerHTML = `<p>${renderMessageContent(content)}</p><span class="bubble-time">刚刚</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
         async function loadConversations() {
             try {
                 if (!cachedFriends) {
                     cachedFriends = await API.getFriends();
                 }
                 const convos = await API.getConversations();
+
+                const hash = JSON.stringify(convos.map(c => c.user_id + ':' + c.unread_count + ':' + (c.last_message || '').slice(0, 20)));
+                if (hash === lastConvoHash) return;
+                lastConvoHash = hash;
+
                 const list = document.getElementById('chatList');
                 const empty = document.getElementById('emptyChats');
 
@@ -175,31 +192,60 @@
 
         async function openChat(userId, name) {
             currentChatUser = userId;
+            lastMsgId = 0;
             document.getElementById('chatPlaceholder').style.display = 'none';
             document.getElementById('chatActive').style.display = 'flex';
             document.getElementById('chatTargetName').textContent = name;
+            document.getElementById('chatMessages').innerHTML = '';
             document.querySelector('.chat-page').classList.add('chat-open');
             await loadMessages();
-            await API.markRead(userId);
-            loadConversations();
+            API.markRead(userId);
+            lastConvoHash = '';
         }
 
         function showChatList() {
             document.querySelector('.chat-page').classList.remove('chat-open');
             currentChatUser = null;
+            lastMsgId = 0;
+            lastConvoHash = '';
+            loadConversations();
         }
 
         async function loadMessages() {
             if (!currentChatUser) return;
             try {
                 const messages = await API.getMessages(currentChatUser);
+                if (!messages.length) return;
+
+                const newLastId = messages[messages.length - 1].id;
+                if (newLastId === lastMsgId) return;
+
                 const container = document.getElementById('chatMessages');
-                container.innerHTML = messages.map(m => `
-                    <div class="chat-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">
-                        <p>${renderMessageContent(m.content)}</p>
-                        <span class="bubble-time">${formatTime(m.created_at)}</span>
-                    </div>
-                `).join('');
+
+                if (lastMsgId === 0) {
+                    container.innerHTML = messages.map(m => `
+                        <div class="chat-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}" data-id="${m.id}">
+                            <p>${renderMessageContent(m.content)}</p>
+                            <span class="bubble-time">${formatTime(m.created_at)}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    const newMsgs = messages.filter(m => m.id > lastMsgId);
+                    const fragment = document.createDocumentFragment();
+                    newMsgs.forEach(m => {
+                        const div = document.createElement('div');
+                        div.className = 'chat-bubble ' + (m.sender_id === currentUser.id ? 'mine' : 'theirs');
+                        div.dataset.id = m.id;
+                        div.innerHTML = `<p>${renderMessageContent(m.content)}</p><span class="bubble-time">${formatTime(m.created_at)}</span>`;
+                        fragment.appendChild(div);
+                    });
+                    container.appendChild(fragment);
+                    if (newMsgs.some(m => m.sender_id !== currentUser.id)) {
+                        API.markRead(currentChatUser);
+                    }
+                }
+
+                lastMsgId = newLastId;
                 container.scrollTop = container.scrollHeight;
             } catch (err) {
                 console.error(err);
@@ -211,32 +257,32 @@
             const content = input.value.trim();
             if (!content || !currentChatUser) return;
             input.value = '';
+            document.getElementById('emojiPanel').style.display = 'none';
             try {
                 await API.sendMessage(currentChatUser, content);
-                await loadMessages();
+                appendMyMessage(content);
             } catch (err) {
                 showToast(err.message, 'error');
             }
         }
 
-        // Poll for new messages
         function startPolling() {
             pollTimer = setInterval(() => {
-                if (currentChatUser) loadMessages();
-                else loadConversations();
+                if (document.hidden) return;
+                if (polling) return;
+                polling = true;
+                const p = currentChatUser ? loadMessages() : loadConversations();
+                p.finally(() => { polling = false; });
             }, 10000);
         }
 
-        // Check URL param for direct chat
         const params = new URLSearchParams(window.location.search);
         const targetUser = params.get('user');
         if (targetUser) {
             (async () => {
-                const friends = await API.getFriends();
-                const friend = friends.find(f => f.id == targetUser);
-                if (friend) {
-                    openChat(friend.id, friend.nickname || friend.username);
-                }
+                if (!cachedFriends) cachedFriends = await API.getFriends();
+                const friend = cachedFriends.find(f => f.id == targetUser);
+                if (friend) openChat(friend.id, friend.nickname || friend.username);
             })();
         }
 
