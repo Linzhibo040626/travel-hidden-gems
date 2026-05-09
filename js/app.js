@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mapContainer && typeof renderChinaMap === 'function') {
         renderChinaMap(mapContainer);
     }
+
+    const btnProfile = document.getElementById('btnProfile');
+    if (btnProfile && !Auth.isLoggedIn()) {
+        btnProfile.style.display = 'none';
+    }
 });
 
 function switchView(view) {
