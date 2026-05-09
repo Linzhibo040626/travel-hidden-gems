@@ -21,7 +21,6 @@
     <div class="inbox-page">
         <div class="inbox-header">
             <h2>邮箱</h2>
-            <button class="btn btn-outline" onclick="markAllRead()">全部已读</button>
         </div>
         <div class="inbox-list" id="inboxList">
             <div class="empty-state" id="emptyInbox">
@@ -41,6 +40,7 @@
 
         async function loadNotifications() {
             try {
+                await API.markNotificationsRead();
                 const notifications = await API.getNotifications();
                 const list = document.getElementById('inboxList');
                 const empty = document.getElementById('emptyInbox');
@@ -83,16 +83,6 @@
                 showToast(res.message, 'success');
                 const actionsDiv = btn.parentElement;
                 actionsDiv.innerHTML = `<span class="inbox-item-done">${action === 'accept' ? '已添加' : '已拒绝'}</span>`;
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
-        }
-
-        async function markAllRead() {
-            try {
-                await API.markNotificationsRead();
-                showToast('已全部标记已读', 'success');
-                document.querySelectorAll('.inbox-item.unread').forEach(el => el.classList.remove('unread'));
             } catch (err) {
                 showToast(err.message, 'error');
             }
