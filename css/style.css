@@ -121,11 +121,12 @@ a:hover {
     flex: 1;
     max-width: 400px;
     margin: 0 24px;
+    position: relative;
 }
 
 .nav-search input {
     width: 100%;
-    padding: 10px 18px;
+    padding: 10px 44px 10px 18px;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: 24px;
@@ -143,6 +144,31 @@ a:hover {
     border-color: var(--primary-light);
     box-shadow: 0 0 0 3px var(--primary-glow);
     background: #FFFFFF;
+}
+
+.nav-search-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.nav-search-btn svg {
+    stroke: #fff;
+}
+
+.nav-search-btn:hover {
+    background: var(--primary-light);
 }
 
 .nav-actions {

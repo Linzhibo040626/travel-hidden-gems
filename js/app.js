@@ -12,13 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnProfile && !Auth.isLoggedIn()) {
         btnProfile.style.display = 'none';
     }
-
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('focus', () => {
-            window.location.href = 'search.html';
-        });
-    }
 });
 
 function switchView(view) {
