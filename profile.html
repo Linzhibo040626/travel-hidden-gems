@@ -8,7 +8,10 @@
 </head>
 <body>
     <nav class="navbar">
-        <a href="index.html" class="nav-logo">&#127757; 秘境旅行</a>
+        <a href="index.html" class="nav-logo">
+            <img src="logo.png" alt="秘境旅行" class="nav-logo-img">
+            <span class="nav-logo-text">秘境旅行</span>
+        </a>
         <div class="nav-search">
             <input type="text" placeholder="搜索目的地、攻略...">
         </div>
@@ -91,7 +94,7 @@
                 if (profile.avatar) {
                     document.getElementById('avatarImg').src = profile.avatar;
                 } else {
-                    document.getElementById('avatarImg').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2381C784" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="white">' + (profile.username ? profile.username[0].toUpperCase() : 'U') + '</text></svg>';
+                    document.getElementById('avatarImg').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%231E2D3D" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%23D4AF37">' + (profile.username ? profile.username[0].toUpperCase() : 'U') + '</text></svg>';
                 }
             } catch (err) {
                 console.error(err);

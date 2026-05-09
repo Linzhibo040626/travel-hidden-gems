@@ -58,7 +58,7 @@ function renderPosts(posts) {
         <div class="post-card" onclick="window.location.href='post.html?id=${post.id}'">
             ${img
                 ? `<img class="post-card-image" src="${escapeHtml(img)}" alt="${escapeHtml(post.title)}" loading="lazy">`
-                : `<div class="post-card-image" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--primary-bg);">&#127757;</div>`
+                : `<div class="post-card-image" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--bg-elevated);">&#127757;</div>`
             }
             <div class="post-card-body">
                 <h3 class="post-card-title">${escapeHtml(post.title)}</h3>
