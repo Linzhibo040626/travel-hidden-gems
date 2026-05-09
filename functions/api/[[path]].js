@@ -1069,10 +1069,9 @@ async function handleSeedPosts(request, env) {
 
     let admin = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official_admin').first();
     if (!admin) {
-        const { hashPassword } = await import('./_helpers.js');
         const hash = await hashPassword('Admin@Seed2026!');
-        await env.DB.prepare('INSERT OR IGNORE INTO users (username, password, nickname) VALUES (?, ?, ?)')
-            .bind('official_admin', hash, '别处游官方').run();
+        await env.DB.prepare('INSERT OR IGNORE INTO users (username, password_hash, phone, nickname) VALUES (?, ?, ?, ?)')
+            .bind('official_admin', hash, '', '别处游官方').run();
         admin = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official_admin').first();
     }
 
