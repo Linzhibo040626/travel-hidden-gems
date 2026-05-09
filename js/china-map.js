@@ -34,27 +34,19 @@ const CHINA_MAP_DATA = {
         { name: "天津", d: "M695.3,248.6 L696.7,247 L700.9,247.8 L700.9,244.8 L702.3,240.2 L703.7,239.5 L705.1,237.9 L709.3,240.2 L709.3,241.7 L706.5,241.7 L706.5,245.5 L709.3,248.6 L713.5,248.6 L712.1,251.6 L714.9,254.6 L714.9,255.4 L712.1,256.9 L707.9,265.2 L702.3,266.8 L693.9,262.2 L693.9,259.9 L696.7,256.9 L695.3,248.6 Z", color: "#95afc0" },
         { name: "上海", d: "M760.9,396.4 L765.1,388.8 L767.9,388.1 L763.7,384.3 L765.1,382 L777.7,386.6 L776.3,394.2 L777.7,400.2 L766.5,402.5 L760.9,396.4 Z", color: "#22a6b3" },
         { name: "香港", d: "M660.5,545 L659.1,549.6 L656.3,549.6 L649.3,549.6 L647.9,548.8 L649.3,545 L653.5,542.8 L656.3,542.8 L657.7,542.8 L657.7,545 L660.5,545 Z", color: "#f8a5c2" },
-        { name: "澳门", d: "M644.4,549.3 L644.6,550 L643.7,550.3 L643.6,548.6 L644.1,548.6 L644.4,549.3 Z", color: "#778beb" }
+        { name: "澳门", d: "M640,548 L643,546 L645,548 L645,552 L642,554 L639,552 Z", color: "#778beb" }
     ],
     seas: {
-        boundary: "M777.8,241.6 L793.7,258.8 L809.5,293.3 L777.8,327.8 L761.9,379.6 L777.8,414.1 L777.8,448.6 L746,500.4 L714.3,534.9 L682.5,569.4 L619,621.2 L587.3,655.7 L555.6,672.9 L523.8,655.7 L555.6,621.2 L571.4,586.7 L587.3,569.4",
         nineDashLine: [
-            "M619,854.1 L619,811",
-            "M627,793.7 L642.9,750.6",
-            "M658.7,733.3 L674.6,707.5",
-            "M682.5,690.2 L698.4,655.7",
-            "M706.3,638.4 L714.3,603.9",
-            "M714.3,578 L706.3,552.2",
-            "M690.5,543.5 L666.7,534.9",
-            "M642.9,534.9 L619,543.5",
-            "M603.2,560.8 L587.3,586.7"
-        ],
-        islands: [
-            { name: "东沙群岛", x: 693.7, y: 574.6 },
-            { name: "西沙群岛", x: 623.8, y: 647.1 },
-            { name: "中沙群岛", x: 674.6, y: 664.3 },
-            { name: "南沙群岛", x: 619, y: 767.8 },
-            { name: "黄岩岛", x: 711.1, y: 669.5 }
+            "M693,570 L698,590 L702,610",
+            "M705,625 L710,645 L712,665",
+            "M712,680 L708,700 L700,718",
+            "M692,730 L680,742 L665,752",
+            "M650,758 L632,762 L615,760",
+            "M600,755 L585,748 L572,738",
+            "M562,725 L555,710 L552,692",
+            "M552,675 L555,658 L560,640",
+            "M565,625 L572,610 L580,598"
         ]
     }
 };
@@ -72,63 +64,6 @@ function renderChinaMap(container) {
     defs.appendChild(filter);
     svg.appendChild(defs);
 
-    const seaGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    seaGroup.setAttribute("class", "sea-group");
-
-    const seaBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    seaBg.setAttribute("x", "555");
-    seaBg.setAttribute("y", "530");
-    seaBg.setAttribute("width", "185");
-    seaBg.setAttribute("height", "340");
-    seaBg.setAttribute("rx", "6");
-    seaBg.setAttribute("fill", "#eaf6fc");
-    seaBg.setAttribute("stroke", "#b3d9ea");
-    seaBg.setAttribute("stroke-width", "1.5");
-    seaGroup.appendChild(seaBg);
-
-    const seaTitle = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    seaTitle.setAttribute("x", "647");
-    seaTitle.setAttribute("y", "550");
-    seaTitle.setAttribute("text-anchor", "middle");
-    seaTitle.setAttribute("font-size", "13");
-    seaTitle.setAttribute("fill", "#2471a3");
-    seaTitle.setAttribute("font-weight", "bold");
-    seaTitle.textContent = "南海诸岛";
-    seaGroup.appendChild(seaTitle);
-
-    CHINA_MAP_DATA.seas.nineDashLine.forEach(d => {
-        const dashPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        dashPath.setAttribute("d", d);
-        dashPath.setAttribute("fill", "none");
-        dashPath.setAttribute("stroke", "#2471a3");
-        dashPath.setAttribute("stroke-width", "2.5");
-        dashPath.setAttribute("stroke-dasharray", "8,5");
-        dashPath.setAttribute("stroke-linecap", "round");
-        seaGroup.appendChild(dashPath);
-    });
-
-    CHINA_MAP_DATA.seas.islands.forEach(island => {
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute("cx", island.x);
-        circle.setAttribute("cy", island.y);
-        circle.setAttribute("r", "4");
-        circle.setAttribute("fill", "#27ae60");
-        circle.setAttribute("stroke", "#fff");
-        circle.setAttribute("stroke-width", "1.5");
-        seaGroup.appendChild(circle);
-
-        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        label.setAttribute("x", island.x);
-        label.setAttribute("y", island.y + 15);
-        label.setAttribute("text-anchor", "middle");
-        label.setAttribute("font-size", "9");
-        label.setAttribute("fill", "#2c3e50");
-        label.textContent = island.name;
-        seaGroup.appendChild(label);
-    });
-
-    svg.appendChild(seaGroup);
-
     CHINA_MAP_DATA.provinces.forEach(province => {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", province.d);
@@ -142,6 +77,18 @@ function renderChinaMap(container) {
         path.addEventListener("click", () => selectProvince(province.name));
 
         svg.appendChild(path);
+    });
+
+    CHINA_MAP_DATA.seas.nineDashLine.forEach(d => {
+        const dashPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        dashPath.setAttribute("d", d);
+        dashPath.setAttribute("fill", "none");
+        dashPath.setAttribute("stroke", "#2471a3");
+        dashPath.setAttribute("stroke-width", "2");
+        dashPath.setAttribute("stroke-dasharray", "6,4");
+        dashPath.setAttribute("stroke-linecap", "round");
+        dashPath.setAttribute("class", "nine-dash-line");
+        svg.appendChild(dashPath);
     });
 
     container.innerHTML = '';
