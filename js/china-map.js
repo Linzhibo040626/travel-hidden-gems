@@ -50,22 +50,30 @@ function renderChinaMap(container) {
     svg.id = "chinaMapSvg";
 
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
-    filter.setAttribute("id", "provinceShadow");
-    filter.innerHTML = '<feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/>';
-    defs.appendChild(filter);
 
-    const starSymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-    starSymbol.setAttribute("id", "capitalStar");
-    starSymbol.setAttribute("viewBox", "0 0 24 24");
-    const starPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    starPath.setAttribute("d", "M12,2 L14.9,8.6 L22,9.3 L16.8,14 L18.2,21 L12,17.5 L5.8,21 L7.2,14 L2,9.3 L9.1,8.6 Z");
-    starPath.setAttribute("fill", "#e74c3c");
-    starPath.setAttribute("stroke", "#c0392b");
-    starPath.setAttribute("stroke-width", "0.5");
-    starSymbol.appendChild(starPath);
-    defs.appendChild(starSymbol);
-
+    defs.innerHTML = `
+        <filter id="provinceShadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/></filter>
+        <filter id="riverGlow">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="starGlow">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+            <feFlood flood-color="#ff4757" flood-opacity="0.6" result="color"/>
+            <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+            <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="yellowRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#f39c12"/>
+            <stop offset="50%" stop-color="#f1c40f"/>
+            <stop offset="100%" stop-color="#d4a017"/>
+        </linearGradient>
+        <linearGradient id="yangtzeRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3498db"/>
+            <stop offset="50%" stop-color="#5dade2"/>
+            <stop offset="100%" stop-color="#2e86c1"/>
+        </linearGradient>
+    `;
     svg.appendChild(defs);
 
     CHINA_MAP_DATA.provinces.forEach(province => {
@@ -83,35 +91,45 @@ function renderChinaMap(container) {
         svg.appendChild(path);
     });
 
+    const yellowBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    yellowBg.setAttribute("d", CHINA_MAP_DATA.rivers.yellowRiver);
+    yellowBg.setAttribute("class", "river-yellow-bg");
+    svg.appendChild(yellowBg);
+
     const yellowRiver = document.createElementNS("http://www.w3.org/2000/svg", "path");
     yellowRiver.setAttribute("d", CHINA_MAP_DATA.rivers.yellowRiver);
-    yellowRiver.setAttribute("fill", "none");
-    yellowRiver.setAttribute("stroke", "#d4a017");
-    yellowRiver.setAttribute("stroke-width", "2.5");
-    yellowRiver.setAttribute("stroke-linecap", "round");
-    yellowRiver.setAttribute("stroke-linejoin", "round");
     yellowRiver.setAttribute("class", "river river-yellow");
     svg.appendChild(yellowRiver);
 
+    const yangtzeBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    yangtzeBg.setAttribute("d", CHINA_MAP_DATA.rivers.yangtzeRiver);
+    yangtzeBg.setAttribute("class", "river-yangtze-bg");
+    svg.appendChild(yangtzeBg);
+
     const yangtzeRiver = document.createElementNS("http://www.w3.org/2000/svg", "path");
     yangtzeRiver.setAttribute("d", CHINA_MAP_DATA.rivers.yangtzeRiver);
-    yangtzeRiver.setAttribute("fill", "none");
-    yangtzeRiver.setAttribute("stroke", "#2980b9");
-    yangtzeRiver.setAttribute("stroke-width", "2.5");
-    yangtzeRiver.setAttribute("stroke-linecap", "round");
-    yangtzeRiver.setAttribute("stroke-linejoin", "round");
     yangtzeRiver.setAttribute("class", "river river-yangtze");
     svg.appendChild(yangtzeRiver);
 
     const cap = CHINA_MAP_DATA.capital;
-    const starUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    starUse.setAttribute("href", "#capitalStar");
-    starUse.setAttribute("x", cap.x - 10);
-    starUse.setAttribute("y", cap.y - 10);
-    starUse.setAttribute("width", "20");
-    starUse.setAttribute("height", "20");
-    starUse.setAttribute("class", "capital-star");
-    svg.appendChild(starUse);
+    const starGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    starGroup.setAttribute("class", "capital-star");
+    starGroup.setAttribute("transform", `translate(${cap.x}, ${cap.y})`);
+
+    const starOuter = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    starOuter.setAttribute("points", "0,-12 3.5,-4 12,-4 5.5,2 7.5,10 0,5.5 -7.5,10 -5.5,2 -12,-4 -3.5,-4");
+    starOuter.setAttribute("fill", "#ff4757");
+    starOuter.setAttribute("stroke", "#c0392b");
+    starOuter.setAttribute("stroke-width", "0.8");
+    starGroup.appendChild(starOuter);
+
+    const starInner = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    starInner.setAttribute("points", "0,-6 1.8,-2 6,-2 2.8,1 3.8,5 0,2.8 -3.8,5 -2.8,1 -6,-2 -1.8,-2");
+    starInner.setAttribute("fill", "#ffd32a");
+    starInner.setAttribute("stroke", "none");
+    starGroup.appendChild(starInner);
+
+    svg.appendChild(starGroup);
 
     container.innerHTML = '';
     container.appendChild(svg);

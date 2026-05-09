@@ -1256,31 +1256,61 @@ a:hover {
 }
 
 .river {
-    stroke-dasharray: 8, 4;
-    animation: riverFlow 2s linear infinite;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .river-yellow {
-    opacity: 0.85;
+    stroke: url(#yellowRiverGradient);
+    stroke-width: 2.2;
+    stroke-dasharray: 12, 6;
+    animation: riverFlowYellow 1.5s linear infinite;
+    filter: url(#riverGlow);
 }
 
 .river-yangtze {
-    opacity: 0.85;
+    stroke: url(#yangtzeRiverGradient);
+    stroke-width: 2.5;
+    stroke-dasharray: 14, 6;
+    animation: riverFlowYangtze 1.8s linear infinite;
+    filter: url(#riverGlow);
 }
 
-@keyframes riverFlow {
-    from { stroke-dashoffset: 24; }
+.river-yellow-bg {
+    fill: none;
+    stroke: rgba(212, 160, 23, 0.15);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.river-yangtze-bg {
+    fill: none;
+    stroke: rgba(41, 128, 185, 0.15);
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@keyframes riverFlowYellow {
+    from { stroke-dashoffset: 18; }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes riverFlowYangtze {
+    from { stroke-dashoffset: 20; }
     to { stroke-dashoffset: 0; }
 }
 
 .capital-star {
-    animation: starPulse 2s ease-in-out infinite;
-    transform-origin: center;
+    filter: url(#starGlow);
+    animation: starBreathe 2.5s ease-in-out infinite;
 }
 
-@keyframes starPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+@keyframes starBreathe {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.85; }
 }
 
 .map-tooltip {
