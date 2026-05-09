@@ -1221,8 +1221,8 @@ a:hover {
 .photo-wall-left,
 .photo-wall-right {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    gap: 12px;
     align-items: center;
 }
 
