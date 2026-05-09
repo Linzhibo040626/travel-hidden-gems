@@ -15,12 +15,12 @@ const Auth = {
     async login(username, password) {
         const data = await API.login(username, password);
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ username: data.username, nickname: data.nickname || data.username, id: data.id }));
+        localStorage.setItem('user', JSON.stringify({ username: data.username, nickname: data.nickname || data.username, id: data.id, phone: data.phone || '' }));
         return data;
     },
 
-    async register(username, password) {
-        return API.register(username, password);
+    async register(username, password, phone, code) {
+        return API.register(username, password, phone, code);
     },
 
     logout() {

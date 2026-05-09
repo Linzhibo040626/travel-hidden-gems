@@ -2,11 +2,21 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    phone TEXT DEFAULT '',
+    nickname TEXT DEFAULT '',
     qq TEXT DEFAULT '',
     gender TEXT DEFAULT '',
     avatar TEXT DEFAULT '',
     signature TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sms_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT NOT NULL,
+    code TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS posts (

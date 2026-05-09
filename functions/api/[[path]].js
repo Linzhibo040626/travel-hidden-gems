@@ -18,6 +18,18 @@ async function runMigrations(env) {
     try {
         await env.DB.prepare("ALTER TABLE users ADD COLUMN signature TEXT DEFAULT ''").run();
     } catch {}
+    try {
+        await env.DB.prepare("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''").run();
+    } catch {}
+    try {
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS sms_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            phone TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at INTEGER NOT NULL,
+            used INTEGER DEFAULT 0
+        )`).run();
+    } catch {}
     migrated = true;
 }
 
@@ -39,6 +51,11 @@ export async function onRequest(context) {
         }
         if (path === '/api/auth/login' && request.method === 'POST') {
             return await handleLogin(request, env);
+        }
+
+        // SMS routes
+        if (path === '/api/sms/send' && request.method === 'POST') {
+            return await handleSendSms(request, env);
         }
 
         // Posts routes
@@ -90,10 +107,33 @@ export async function onRequest(context) {
     }
 }
 
+// --- SMS Handler ---
+
+async function handleSendSms(request, env) {
+    const { phone } = await request.json();
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+        return json({ error: '请输入正确的手机号' }, 400);
+    }
+
+    const recent = await env.DB.prepare(
+        'SELECT id FROM sms_codes WHERE phone = ? AND expires_at > ? AND used = 0 ORDER BY id DESC LIMIT 1'
+    ).bind(phone, Date.now() + 4 * 60 * 1000).first();
+    if (recent) {
+        return json({ error: '验证码已发送，请60秒后再试' }, 429);
+    }
+
+    const code = '123456';
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+    await env.DB.prepare('INSERT INTO sms_codes (phone, code, expires_at) VALUES (?, ?, ?)')
+        .bind(phone, code, expiresAt).run();
+
+    return json({ message: '验证码已发送' });
+}
+
 // --- Auth Handlers ---
 
 async function handleRegister(request, env) {
-    const { username, password } = await request.json();
+    const { username, password, phone, code } = await request.json();
     if (!username || !password) {
         return json({ error: '账号和密码不能为空' }, 400);
     }
@@ -103,15 +143,35 @@ async function handleRegister(request, env) {
     if (password.length < 6) {
         return json({ error: '密码至少需要6位' }, 400);
     }
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+        return json({ error: '请输入正确的手机号' }, 400);
+    }
+    if (!code) {
+        return json({ error: '请输入验证码' }, 400);
+    }
 
-    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
-    if (existing) {
+    const smsRecord = await env.DB.prepare(
+        'SELECT id FROM sms_codes WHERE phone = ? AND code = ? AND expires_at > ? AND used = 0 ORDER BY id DESC LIMIT 1'
+    ).bind(phone, code, Date.now()).first();
+    if (!smsRecord) {
+        return json({ error: '验证码错误或已过期' }, 400);
+    }
+
+    const existingUser = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
+    if (existingUser) {
         return json({ error: '该账号已存在' }, 409);
     }
 
+    const existingPhone = await env.DB.prepare('SELECT id FROM users WHERE phone = ?').bind(phone).first();
+    if (existingPhone) {
+        return json({ error: '该手机号已注册' }, 409);
+    }
+
     const passwordHash = await hashPassword(password);
-    await env.DB.prepare('INSERT INTO users (username, password_hash, nickname) VALUES (?, ?, ?)')
-        .bind(username, passwordHash, '旅行者' + username.slice(-4)).run();
+    await env.DB.prepare('INSERT INTO users (username, password_hash, phone, nickname) VALUES (?, ?, ?, ?)')
+        .bind(username, passwordHash, phone, '旅行者' + username.slice(-4)).run();
+
+    await env.DB.prepare('UPDATE sms_codes SET used = 1 WHERE id = ?').bind(smsRecord.id).run();
 
     return json({ message: '注册成功' }, 201);
 }
@@ -122,7 +182,7 @@ async function handleLogin(request, env) {
         return json({ error: '账号和密码不能为空' }, 400);
     }
 
-    const user = await env.DB.prepare('SELECT id, username, nickname, password_hash FROM users WHERE username = ?')
+    const user = await env.DB.prepare('SELECT id, username, nickname, phone, password_hash FROM users WHERE username = ?')
         .bind(username).first();
 
     if (!user) {
@@ -135,7 +195,7 @@ async function handleLogin(request, env) {
     }
 
     const token = await createToken({ id: user.id, username: user.username }, getSecret(env));
-    return json({ token, username: user.username, nickname: user.nickname || user.username, id: user.id });
+    return json({ token, username: user.username, nickname: user.nickname || user.username, id: user.id, phone: user.phone || '' });
 }
 
 // --- Post Handlers ---
@@ -256,7 +316,7 @@ async function handleGetProfile(request, env) {
     if (!user) return json({ error: '请先登录' }, 401);
 
     const profile = await env.DB.prepare(
-        'SELECT id, username, nickname, qq, gender, avatar, signature, created_at FROM users WHERE id = ?'
+        'SELECT id, username, nickname, phone, qq, gender, avatar, signature, created_at FROM users WHERE id = ?'
     ).bind(user.id).first();
 
     if (!profile) return json({ error: '用户不存在' }, 404);

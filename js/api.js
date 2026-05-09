@@ -22,10 +22,17 @@ const API = {
         return data;
     },
 
-    async register(username, password) {
+    async register(username, password, phone, code) {
         return this.request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, phone, code })
+        });
+    },
+
+    async sendSmsCode(phone) {
+        return this.request('/sms/send', {
+            method: 'POST',
+            body: JSON.stringify({ phone })
         });
     },
 

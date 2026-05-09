@@ -476,6 +476,27 @@ a:hover {
     color: var(--primary);
 }
 
+.sms-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.sms-input-group input {
+    flex: 1;
+}
+
+.sms-btn {
+    white-space: nowrap;
+    width: auto !important;
+    padding: 10px 16px !important;
+    font-size: 0.85rem !important;
+}
+
+.sms-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Image Upload */
 .image-upload-area {
     border: 1px solid var(--border);

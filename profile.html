@@ -37,6 +37,10 @@
                         <label for="profileNickname">用户名（昵称）</label>
                         <input type="text" id="profileNickname" placeholder="设置你的用户名" maxlength="20">
                     </div>
+                    <div class="form-group">
+                        <label>绑定手机</label>
+                        <input type="text" id="profilePhone" disabled style="background:var(--bg-elevated);cursor:not-allowed;">
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="profileQQ">QQ号</label>
@@ -93,6 +97,7 @@
                 document.getElementById('profileGender').value = p.gender || '';
                 document.getElementById('profileSig').value = p.signature || '';
                 document.getElementById('profileSignature').textContent = p.signature || '这个人很懒，什么都没写~';
+                document.getElementById('profilePhone').value = maskPhone(p.phone);
                 if (p.avatar) {
                     document.getElementById('avatarImg').src = p.avatar;
                 } else {
@@ -101,7 +106,13 @@
             } else if (user) {
                 document.getElementById('profileUsername').textContent = user.nickname || user.username || '';
                 document.getElementById('avatarImg').src = defaultAvatar(user.username);
+                document.getElementById('profilePhone').value = maskPhone(user.phone);
             }
+        }
+
+        function maskPhone(phone) {
+            if (!phone || phone.length < 11) return '未绑定';
+            return phone.slice(0, 3) + '****' + phone.slice(7);
         }
 
         function defaultAvatar(username) {
@@ -119,6 +130,7 @@
                 document.getElementById('profileGender').value = profile.gender || '';
                 document.getElementById('profileSig').value = profile.signature || '';
                 document.getElementById('profileSignature').textContent = profile.signature || '这个人很懒，什么都没写~';
+                document.getElementById('profilePhone').value = maskPhone(profile.phone);
                 if (profile.avatar) {
                     document.getElementById('avatarImg').src = profile.avatar;
                 } else {
