@@ -1236,25 +1236,23 @@ a:hover {
 }
 
 .province-path {
-    fill: linear-gradient(135deg, #D4EFE8, #E8F6F8);
-    fill: #D4EFE8;
     stroke: #FFFFFF;
-    stroke-width: 1.5;
+    stroke-width: 1.8;
     cursor: pointer;
     transition: all var(--transition-smooth);
 }
 
 .province-path:hover {
-    fill: var(--secondary-light);
+    filter: brightness(1.1) drop-shadow(0 3px 6px rgba(27, 94, 107, 0.35));
     stroke: var(--primary);
-    stroke-width: 2;
-    filter: drop-shadow(0 2px 4px rgba(27, 94, 107, 0.3));
+    stroke-width: 2.5;
+    transform-origin: center;
 }
 
 .province-path.active {
-    fill: var(--primary-light);
+    filter: brightness(0.9) drop-shadow(0 4px 8px rgba(27, 94, 107, 0.4));
     stroke: var(--primary-dark);
-    stroke-width: 2.5;
+    stroke-width: 3;
 }
 
 .map-tooltip {
