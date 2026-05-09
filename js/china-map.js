@@ -1,5 +1,5 @@
 const CHINA_MAP_DATA = {
-    viewBox: "0 -35 1000 930",
+    viewBox: "0 -50 1000 950",
     provinces: [
         { name: "新疆", d: "M371.7,194 L371.7,194.7 L364.7,198.5 L366.1,201.5 L368.9,203.1 L364.7,208.4 L353.5,213.7 L352.2,210.6 L342.4,216 L334,222.8 L331.2,229.6 L318.7,230.4 L311.7,247.8 L307.5,253.1 L307.5,256.9 L307.5,258.4 L272.6,267.5 L275.4,272.1 L279.6,270.6 L278.2,278.9 L286.6,285.7 L290.8,291.8 L281,297.1 L282.4,300.1 L286.6,301.6 L286.6,309.2 L283.8,310 L269.8,306.2 L268.4,309.2 L265.7,309.2 L257.3,305.4 L250.3,304.7 L247.5,302.4 L228,303.2 L209.9,307.7 L208.5,313 L200.1,316 L191.7,315.3 L177.8,321.4 L161,320.6 L156.8,316 L149.9,315.3 L142.9,322.1 L137.3,323.6 L117.8,320.6 L115,322.9 L116.4,325.1 L115,324.4 L109.4,331.2 L108,336.5 L96.9,337.3 L95.5,339.6 L82.9,332.7 L80.1,323.6 L80.1,319.1 L70.3,319.8 L60.6,316.8 L56.4,313 L50.8,313.8 L46.6,310 L48,302.4 L45.2,298.6 L39.7,297.8 L38.3,294.1 L32.7,293.3 L29.9,294.8 L28.5,292.5 L24.3,291.8 L24.3,289.5 L29.9,289.5 L34.1,285.7 L29.9,283.4 L31.3,280.4 L29.9,268.3 L21.5,264.5 L18.7,264.5 L17.3,266.8 L13.1,266 L11.7,261.5 L13.1,259.2 L7.6,252.4 L14.5,250.1 L14.5,247 L13.1,245.5 L15.9,241 L29.9,235.7 L28.5,232.6 L35.5,234.2 L41,230.4 L43.8,236.4 L53.6,234.9 L62,224.3 L73.1,224.3 L81.5,220.5 L81.5,217.5 L113.6,206.1 L115,202.3 L113.6,196.2 L115,192.4 L119.2,191.7 L117.8,188.7 L123.4,186.4 L117.8,169.7 L117.8,162.1 L110.8,158.3 L110.8,156.1 L138.7,148.5 L144.3,151.5 L151.3,151.5 L147.1,143.9 L159.6,116.6 L169.4,120.4 L186.1,120.4 L188.9,122.7 L198.7,119.7 L201.5,115.9 L198.7,101.5 L202.9,96.1 L215.4,93.9 L219.6,89.3 L218.2,87 L219.6,84 L235,83.3 L236.4,86.3 L233.6,87.8 L239.1,90.8 L237.8,93.1 L246.1,96.9 L248.9,100.7 L255.9,103.7 L262.9,103 L265.7,106 L271.2,106 L275.4,109 L278.2,116.6 L283.8,121.2 L286.6,128 L283.8,132.5 L286.6,137.9 L281,142.4 L281,146.2 L283.8,151.5 L295,153.8 L325.6,156.1 L345.2,166.7 L354.9,167.4 L354.9,172 L357.7,174.3 L363.3,185.6 L370.3,190.9 L371.7,194 Z", color: "#c0956c" },
         { name: "西藏", d: "M95.5,339.6 L96.9,337.3 L108,336.5 L109.4,331.2 L115,324.4 L116.4,325.1 L115,322.9 L117.8,320.6 L137.3,323.6 L142.9,322.1 L149.9,315.3 L156.8,316 L161,320.6 L177.8,321.4 L191.7,315.3 L200.1,316 L208.5,313 L209.9,307.7 L228,303.2 L247.5,302.4 L250.3,304.7 L257.3,305.4 L265.7,309.2 L260.1,310 L261.5,312.3 L265.7,314.5 L265.7,320.6 L261.5,321.4 L261.5,323.6 L262.9,329.7 L267.1,330.5 L265.7,333.5 L267.1,338.8 L264.3,344.9 L271.2,354 L281,360 L292.2,360 L300.5,365.3 L304.7,365.3 L306.1,366.9 L317.3,366.9 L325.6,371.4 L329.8,369.9 L335.4,372.2 L343.8,369.1 L352.2,372.2 L349.4,374.4 L352.2,373.7 L353.5,376 L354.9,376.7 L354.9,379.7 L356.3,382.8 L361.9,385.1 L364.7,382.8 L367.5,386.6 L368.9,380.5 L373.1,384.3 L378.7,385.1 L377.3,379.7 L385.6,378.2 L387,369.9 L392.6,370.6 L399.6,373.7 L403.8,382 L410.7,389.6 L406.6,393.4 L412.1,401 L414.9,426.8 L412.1,429 L412.1,434.3 L409.4,433.6 L409.4,431.3 L408,432.8 L406.6,439.6 L409.4,442.7 L408,445 L402.4,446.5 L401,441.9 L399.6,446.5 L389.8,439.6 L385.6,447.2 L387,450.3 L381.4,453.3 L373.1,446.5 L360.5,444.2 L354.9,446.5 L353.5,449.5 L336.8,456.3 L331.2,465.4 L327,466.9 L303.3,468.5 L301.9,457.8 L295,456.3 L295,450.3 L292.2,448 L286.6,451 L281,447.2 L267.1,445 L264.3,445.7 L255.9,455.6 L255.9,460.1 L254.5,462.4 L250.3,458.6 L251.7,448.7 L248.9,446.5 L240.5,450.3 L236.4,449.5 L233.6,451.8 L223.8,451.8 L218.2,446.5 L215.4,446.5 L214,450.3 L208.5,446.5 L207.1,450.3 L201.5,442.7 L200.1,444.2 L193.1,442.7 L193.1,437.4 L188.9,438.9 L182,435.9 L179.2,433.6 L177.8,427.5 L176.4,426.8 L168,428.3 L162.4,421.4 L145.7,413.1 L144.3,408.6 L133.1,407.8 L130.3,413.9 L127.5,410.1 L112.2,404 L106.6,397.9 L95.5,395.7 L91.3,391.1 L92.7,386.6 L89.9,382.8 L91.3,381.3 L87.1,377.5 L85.7,370.6 L91.3,367.6 L94.1,373.7 L99.6,369.9 L96.9,359.3 L89.9,350.9 L89.9,343.3 L94.1,342.6 L95.5,339.6 Z", color: "#7a4a2a" },
@@ -92,8 +92,221 @@ function renderChinaMap(container) {
             <animate attributeName="x1" values="0%;100%;0%" dur="4s" repeatCount="indefinite"/>
             <animate attributeName="x2" values="100%;200%;100%" dur="4s" repeatCount="indefinite"/>
         </linearGradient>
+
+        <pattern id="pat-xizang" width="24" height="24" patternUnits="userSpaceOnUse">
+            <rect width="24" height="24" fill="#5c3317"/>
+            <polygon points="6,24 12,10 18,24" fill="#fff" opacity="0.5"/>
+            <polygon points="16,24 20,16 24,24" fill="#fff" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-qinghai" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#6b4c2a"/>
+            <path d="M0,8 Q5,4 10,8 T20,8" fill="none" stroke="#4fa3d1" stroke-width="2" opacity="0.7"/>
+            <path d="M0,4 Q5,0 10,4 T20,4" fill="none" stroke="#3498db" stroke-width="1.5" opacity="0.5"/>
+        </pattern>
+        <pattern id="pat-xinjiang" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#d4a54a"/>
+            <path d="M0,14 Q5,10 10,14 T20,14" fill="none" stroke="#c4903a" stroke-width="2" opacity="0.6"/>
+            <circle cx="5" cy="5" r="1" fill="#b8860b" opacity="0.4"/>
+            <circle cx="15" cy="8" r="0.8" fill="#b8860b" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-neimenggu" width="16" height="20" patternUnits="userSpaceOnUse">
+            <rect width="16" height="20" fill="#5a9e3a"/>
+            <line x1="3" y1="20" x2="3" y2="8" stroke="#3d7a28" stroke-width="1.2" opacity="0.7"/>
+            <line x1="7" y1="20" x2="7" y2="6" stroke="#4a8c30" stroke-width="1" opacity="0.6"/>
+            <line x1="11" y1="20" x2="11" y2="9" stroke="#3d7a28" stroke-width="1.2" opacity="0.5"/>
+            <line x1="14" y1="20" x2="14" y2="7" stroke="#4a8c30" stroke-width="0.8" opacity="0.6"/>
+        </pattern>
+        <pattern id="pat-heilongjiang" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#d6eaf8"/>
+            <circle cx="4" cy="4" r="1.5" fill="#fff" opacity="0.8"/>
+            <circle cx="14" cy="8" r="1" fill="#fff" opacity="0.6"/>
+            <circle cx="8" cy="16" r="1.2" fill="#aed6f1" opacity="0.7"/>
+            <circle cx="17" cy="17" r="0.8" fill="#fff" opacity="0.5"/>
+        </pattern>
+        <pattern id="pat-jilin" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="#2d6b3f"/>
+            <line x1="2" y1="0" x2="2" y2="18" stroke="#fff" stroke-width="0.6" opacity="0.3"/>
+            <line x1="8" y1="0" x2="8" y2="18" stroke="#fff" stroke-width="0.8" opacity="0.25"/>
+            <line x1="14" y1="0" x2="14" y2="18" stroke="#fff" stroke-width="0.5" opacity="0.35"/>
+            <circle cx="5" cy="9" r="1" fill="#fff" opacity="0.2"/>
+        </pattern>
+        <pattern id="pat-liaoning" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#5d8aa8"/>
+            <path d="M0,8 Q5,5 10,8 T20,8" fill="none" stroke="#fff" stroke-width="1" opacity="0.4"/>
+            <path d="M0,4 Q5,1 10,4 T20,4" fill="none" stroke="#87ceeb" stroke-width="0.8" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-gansu" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="#c4a35a"/>
+            <circle cx="4" cy="6" r="1.5" fill="#a0824a" opacity="0.5"/>
+            <circle cx="12" cy="3" r="1" fill="#8b6914" opacity="0.4"/>
+            <circle cx="8" cy="14" r="1.2" fill="#a0824a" opacity="0.4"/>
+            <circle cx="15" cy="12" r="0.8" fill="#8b6914" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-ningxia" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="#d4b87a"/>
+            <circle cx="5" cy="5" r="2" fill="#6aab5c" opacity="0.5"/>
+            <circle cx="13" cy="12" r="1.8" fill="#5a9e3a" opacity="0.4"/>
+            <circle cx="9" cy="16" r="1" fill="#6aab5c" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-shaanxi" width="20" height="10" patternUnits="userSpaceOnUse">
+            <rect width="20" height="10" fill="#c49a3c"/>
+            <line x1="0" y1="3" x2="20" y2="3" stroke="#a67c2e" stroke-width="1.5" opacity="0.4"/>
+            <line x1="0" y1="7" x2="20" y2="7" stroke="#b8892e" stroke-width="1" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-shanxi" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="#8b6b3e"/>
+            <line x1="0" y1="5" x2="18" y2="5" stroke="#6b4c2a" stroke-width="1.2" opacity="0.4"/>
+            <line x1="0" y1="12" x2="18" y2="12" stroke="#5c3d1e" stroke-width="1" opacity="0.35"/>
+            <rect x="7" y="7" width="4" height="4" fill="#333" opacity="0.15"/>
+        </pattern>
+        <pattern id="pat-sichuan" width="14" height="22" patternUnits="userSpaceOnUse">
+            <rect width="14" height="22" fill="#2e8b57"/>
+            <line x1="4" y1="0" x2="4" y2="22" stroke="#1a6b3a" stroke-width="2" opacity="0.5"/>
+            <line x1="10" y1="0" x2="10" y2="22" stroke="#1a6b3a" stroke-width="1.5" opacity="0.4"/>
+            <line x1="2" y1="7" x2="6" y2="7" stroke="#145a2e" stroke-width="0.8" opacity="0.4"/>
+            <line x1="8" y1="14" x2="12" y2="14" stroke="#145a2e" stroke-width="0.8" opacity="0.4"/>
+        </pattern>
+        <pattern id="pat-chongqing" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#d4764a"/>
+            <polygon points="3,20 10,8 17,20" fill="#b85c3a" opacity="0.4"/>
+            <polygon points="12,20 16,12 20,20" fill="#a04a2e" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-yunnan" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#3a8c5a"/>
+            <circle cx="5" cy="5" r="2.5" fill="#e74c8b" opacity="0.5"/>
+            <circle cx="15" cy="7" r="2" fill="#f1c40f" opacity="0.45"/>
+            <circle cx="8" cy="15" r="2.2" fill="#9b59b6" opacity="0.4"/>
+            <circle cx="16" cy="16" r="1.5" fill="#e67e22" opacity="0.4"/>
+        </pattern>
+        <pattern id="pat-guizhou" width="22" height="22" patternUnits="userSpaceOnUse">
+            <rect width="22" height="22" fill="#6b9b7a"/>
+            <polygon points="4,22 7,12 10,22" fill="#4a7a5a" opacity="0.5"/>
+            <polygon points="12,22 16,10 20,22" fill="#3d6b4a" opacity="0.45"/>
+        </pattern>
+        <pattern id="pat-guangxi" width="22" height="22" patternUnits="userSpaceOnUse">
+            <rect width="22" height="22" fill="#4aab8a"/>
+            <polygon points="3,22 6,10 9,22" fill="#2d8b6a" opacity="0.5"/>
+            <polygon points="13,22 17,8 21,22" fill="#1a7a5a" opacity="0.4"/>
+        </pattern>
+        <pattern id="pat-hebei" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#d4a840"/>
+            <line x1="0" y1="4" x2="20" y2="4" stroke="#c49830" stroke-width="2" opacity="0.4"/>
+            <line x1="0" y1="9" x2="20" y2="9" stroke="#b88a28" stroke-width="1.5" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-beijing" width="16" height="16" patternUnits="userSpaceOnUse">
+            <rect width="16" height="16" fill="#c0392b"/>
+            <rect x="2" y="2" width="5" height="5" fill="#f1c40f" opacity="0.4"/>
+            <rect x="9" y="9" width="5" height="5" fill="#f1c40f" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-tianjin" width="18" height="12" patternUnits="userSpaceOnUse">
+            <rect width="18" height="12" fill="#4a7a9b"/>
+            <path d="M0,7 Q4.5,4 9,7 T18,7" fill="none" stroke="#6a9ab5" stroke-width="1.2" opacity="0.5"/>
+        </pattern>
+        <pattern id="pat-shandong" width="22" height="22" patternUnits="userSpaceOnUse">
+            <rect width="22" height="22" fill="#3a8b7a"/>
+            <polygon points="5,22 11,10 17,22" fill="#2a6b5a" opacity="0.4"/>
+            <path d="M0,18 Q5.5,15 11,18 T22,18" fill="none" stroke="#5ab5a0" stroke-width="1" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-henan" width="16" height="18" patternUnits="userSpaceOnUse">
+            <rect width="16" height="18" fill="#c9a832"/>
+            <line x1="4" y1="0" x2="4" y2="12" stroke="#a08828" stroke-width="1" opacity="0.4"/>
+            <line x1="8" y1="0" x2="8" y2="14" stroke="#a08828" stroke-width="1" opacity="0.35"/>
+            <line x1="12" y1="0" x2="12" y2="11" stroke="#a08828" stroke-width="1" opacity="0.4"/>
+            <circle cx="4" cy="2" r="1.5" fill="#d4b832" opacity="0.5"/>
+            <circle cx="8" cy="3" r="1.5" fill="#d4b832" opacity="0.45"/>
+            <circle cx="12" cy="2" r="1.5" fill="#d4b832" opacity="0.5"/>
+        </pattern>
+        <pattern id="pat-anhui" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#7a9baa"/>
+            <circle cx="5" cy="8" r="2" fill="#4a6b7a" opacity="0.4"/>
+            <circle cx="14" cy="4" r="1.5" fill="#3a5a6a" opacity="0.35"/>
+            <circle cx="10" cy="16" r="2.5" fill="#4a6b7a" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-jiangsu" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#7ab8d4"/>
+            <path d="M0,6 Q5,3 10,6 T20,6" fill="none" stroke="#5a9ab8" stroke-width="1.5" opacity="0.5"/>
+            <path d="M0,10 Q5,7 10,10 T20,10" fill="none" stroke="#4a8aa8" stroke-width="1" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-shanghai" width="14" height="14" patternUnits="userSpaceOnUse">
+            <rect width="14" height="14" fill="#8a9baa"/>
+            <line x1="0" y1="7" x2="14" y2="7" stroke="#aab5c0" stroke-width="0.6" opacity="0.5"/>
+            <line x1="7" y1="0" x2="7" y2="14" stroke="#aab5c0" stroke-width="0.6" opacity="0.5"/>
+        </pattern>
+        <pattern id="pat-zhejiang" width="20" height="14" patternUnits="userSpaceOnUse">
+            <rect width="20" height="14" fill="#2e8b57"/>
+            <line x1="0" y1="4" x2="20" y2="4" stroke="#1a6b3a" stroke-width="1.5" opacity="0.4"/>
+            <line x1="0" y1="9" x2="20" y2="9" stroke="#1a6b3a" stroke-width="1.2" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-fujian" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#1a6b3a"/>
+            <circle cx="10" cy="10" r="4" fill="none" stroke="#0d4a25" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="10" cy="10" r="2" fill="#0d4a25" opacity="0.25"/>
+        </pattern>
+        <pattern id="pat-jiangxi" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#b84a3a"/>
+            <path d="M0,16 Q5,10 10,16 T20,16" fill="#9a3a2a" opacity="0.4"/>
+            <path d="M5,20 Q10,14 15,20" fill="#8a2a1a" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-hubei" width="20" height="20" patternUnits="userSpaceOnUse">
+            <rect width="20" height="20" fill="#3a8b8b"/>
+            <circle cx="6" cy="6" r="2.5" fill="#2a7a7a" opacity="0.4"/>
+            <circle cx="15" cy="14" r="3" fill="#1a6a6a" opacity="0.35"/>
+            <circle cx="14" cy="5" r="1.5" fill="#2a7a7a" opacity="0.3"/>
+        </pattern>
+        <pattern id="pat-hunan" width="20" height="10" patternUnits="userSpaceOnUse">
+            <rect width="20" height="10" fill="#4aab3a"/>
+            <line x1="0" y1="3" x2="20" y2="3" stroke="#3a9b2a" stroke-width="1.5" opacity="0.4"/>
+            <line x1="0" y1="7" x2="20" y2="7" stroke="#2a8b1a" stroke-width="1.2" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-guangdong" width="18" height="18" patternUnits="userSpaceOnUse">
+            <rect width="18" height="18" fill="#1a7a3a"/>
+            <path d="M4,14 Q4,8 8,8" fill="none" stroke="#0d5a25" stroke-width="1.5" opacity="0.4"/>
+            <path d="M12,16 Q12,10 16,10" fill="none" stroke="#0d5a25" stroke-width="1.2" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-hainan" width="18" height="20" patternUnits="userSpaceOnUse">
+            <rect width="18" height="20" fill="#2a9b5a"/>
+            <line x1="5" y1="20" x2="5" y2="6" stroke="#1a7a3a" stroke-width="2" opacity="0.4"/>
+            <path d="M2,6 Q5,2 8,6" fill="none" stroke="#3aab6a" stroke-width="1.5" opacity="0.5"/>
+            <line x1="13" y1="20" x2="13" y2="8" stroke="#1a7a3a" stroke-width="1.5" opacity="0.35"/>
+            <path d="M10,8 Q13,4 16,8" fill="none" stroke="#3aab6a" stroke-width="1.2" opacity="0.4"/>
+        </pattern>
+        <pattern id="pat-taiwan" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#2a7a9b"/>
+            <path d="M0,7 Q5,4 10,7 T20,7" fill="none" stroke="#4a9ab8" stroke-width="1.5" opacity="0.5"/>
+            <path d="M0,3 Q5,0 10,3 T20,3" fill="none" stroke="#5aabb8" stroke-width="1" opacity="0.35"/>
+        </pattern>
+        <pattern id="pat-xianggang" width="12" height="12" patternUnits="userSpaceOnUse">
+            <rect width="12" height="12" fill="#6a7a8a"/>
+            <rect x="2" y="2" width="3" height="3" fill="#8a9aaa" opacity="0.3"/>
+            <rect x="7" y="7" width="3" height="3" fill="#8a9aaa" opacity="0.25"/>
+        </pattern>
+        <pattern id="pat-aomen" width="12" height="12" patternUnits="userSpaceOnUse">
+            <rect width="12" height="12" fill="#7a8a6a"/>
+            <rect x="2" y="2" width="3" height="3" fill="#9aaa8a" opacity="0.3"/>
+            <rect x="7" y="7" width="3" height="3" fill="#9aaa8a" opacity="0.25"/>
+        </pattern>
     `;
     svg.appendChild(defs);
+
+    const patternMap = {
+        "西藏": "url(#pat-xizang)", "青海": "url(#pat-qinghai)",
+        "新疆": "url(#pat-xinjiang)", "内蒙古": "url(#pat-neimenggu)",
+        "黑龙江": "url(#pat-heilongjiang)", "吉林": "url(#pat-jilin)",
+        "辽宁": "url(#pat-liaoning)", "甘肃": "url(#pat-gansu)",
+        "宁夏": "url(#pat-ningxia)", "陕西": "url(#pat-shaanxi)",
+        "山西": "url(#pat-shanxi)", "四川": "url(#pat-sichuan)",
+        "重庆": "url(#pat-chongqing)", "云南": "url(#pat-yunnan)",
+        "贵州": "url(#pat-guizhou)", "广西": "url(#pat-guangxi)",
+        "河北": "url(#pat-hebei)", "北京": "url(#pat-beijing)",
+        "天津": "url(#pat-tianjin)", "山东": "url(#pat-shandong)",
+        "河南": "url(#pat-henan)", "安徽": "url(#pat-anhui)",
+        "江苏": "url(#pat-jiangsu)", "上海": "url(#pat-shanghai)",
+        "浙江": "url(#pat-zhejiang)", "福建": "url(#pat-fujian)",
+        "江西": "url(#pat-jiangxi)", "湖北": "url(#pat-hubei)",
+        "湖南": "url(#pat-hunan)", "广东": "url(#pat-guangdong)",
+        "海南": "url(#pat-hainan)", "台湾": "url(#pat-taiwan)",
+        "香港": "url(#pat-xianggang)", "澳门": "url(#pat-aomen)"
+    };
 
     const step1 = ["西藏", "青海"];
     const step2 = ["新疆", "内蒙古", "甘肃", "宁夏", "陕西", "山西", "四川", "重庆", "云南", "贵州", "广西"];
@@ -102,7 +315,7 @@ function renderChinaMap(container) {
         if (step2.includes(name)) return 2;
         return 3;
     }
-    const stepOffset = { 1: { dx: 0, dy: -32 }, 2: { dx: 0, dy: -14 }, 3: { dx: 0, dy: 0 } };
+    const stepOffset = { 1: { dx: 0, dy: -45 }, 2: { dx: 0, dy: -20 }, 3: { dx: 0, dy: 0 } };
 
     const gWalls = document.createElementNS("http://www.w3.org/2000/svg", "g");
     gWalls.setAttribute("class", "step-walls");
@@ -117,7 +330,7 @@ function renderChinaMap(container) {
         const offset = stepOffset[step];
 
         if (step < 3) {
-            const layers = step === 1 ? 10 : 5;
+            const layers = step === 1 ? 14 : 7;
             for (let i = layers; i >= 1; i--) {
                 const wall = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 wall.setAttribute("d", province.d);
@@ -136,7 +349,7 @@ function renderChinaMap(container) {
         path.setAttribute("d", province.d);
         path.setAttribute("data-province", province.name);
         path.setAttribute("class", `province-path step-${step}-province`);
-        path.setAttribute("fill", province.color);
+        path.setAttribute("fill", patternMap[province.name] || province.color);
         path.setAttribute("transform", `translate(${offset.dx}, ${offset.dy})`);
         if (step === 1) path.setAttribute("filter", "url(#step1Shadow)");
         else if (step === 2) path.setAttribute("filter", "url(#step2Shadow)");
@@ -198,7 +411,7 @@ function renderChinaMap(container) {
     svg.appendChild(starGroup);
 
     const legend = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    legend.setAttribute("transform", "translate(20, 790)");
+    legend.setAttribute("transform", "translate(20, 800)");
     const legendItems = [
         { color: "#7a4a2a", label: "第一阶梯 (>4000m)", desc: "青藏高原" },
         { color: "#c0956c", label: "第二阶梯 (1000-2000m)", desc: "高原/盆地" },
