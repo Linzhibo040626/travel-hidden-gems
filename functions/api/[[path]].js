@@ -1,4 +1,4 @@
-import { json, hashPassword, createToken, verifyToken, getUser } from './_helpers.js';
+import { json, hashPassword, createToken, verifyToken, getUser, getSecret } from './_helpers.js';
 
 export async function onRequest(context) {
     const { request, env } = context;
@@ -94,7 +94,7 @@ async function handleLogin(request, env) {
         return json({ error: '用户名或密码错误' }, 401);
     }
 
-    const token = await createToken({ id: user.id, username: user.username }, env.JWT_SECRET);
+    const token = await createToken({ id: user.id, username: user.username }, getSecret(env));
     return json({ token, username: user.username, id: user.id });
 }
 

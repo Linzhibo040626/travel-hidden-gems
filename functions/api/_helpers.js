@@ -51,8 +51,14 @@ export async function verifyToken(token, secret) {
     }
 }
 
+export const DEFAULT_SECRET = 'travel-hidden-gems-jwt-secret-2024';
+
+export function getSecret(env) {
+    return env.JWT_SECRET || DEFAULT_SECRET;
+}
+
 export async function getUser(request, env) {
     const auth = request.headers.get('Authorization');
     if (!auth || !auth.startsWith('Bearer ')) return null;
-    return verifyToken(auth.slice(7), env.JWT_SECRET);
+    return verifyToken(auth.slice(7), getSecret(env));
 }
