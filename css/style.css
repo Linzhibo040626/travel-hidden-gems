@@ -1064,6 +1064,58 @@ a:hover {
     background-clip: text;
 }
 
+/* Photo Wall */
+.photo-wall {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    padding: 40px 24px;
+    flex-wrap: wrap;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.photo-frame {
+    background: #FFFFFF;
+    padding: 8px 8px 28px 8px;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+    transform: rotate(var(--rotate, 0deg));
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: photoFadeIn 0.6s ease calc(var(--delay, 0s)) both;
+    position: relative;
+}
+
+.photo-frame:hover {
+    transform: rotate(0deg) scale(1.08);
+    box-shadow: 0 12px 32px rgba(27, 94, 107, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+    z-index: 2;
+}
+
+.photo-frame img {
+    width: 130px;
+    height: 130px;
+    object-fit: cover;
+    display: block;
+    border-radius: 2px;
+}
+
+.frame-label {
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-family: "KaiTi", "STKaiti", serif;
+    letter-spacing: 1px;
+}
+
+@keyframes photoFadeIn {
+    from { opacity: 0; transform: rotate(var(--rotate, 0deg)) translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: rotate(var(--rotate, 0deg)) translateY(0) scale(1); }
+}
+
 /* Main Layout - Sidebar + Content */
 .main-layout {
     display: flex;
@@ -1324,5 +1376,23 @@ a:hover {
 
     .main-content {
         margin-left: 0;
+    }
+
+    .photo-wall {
+        gap: 16px;
+        padding: 24px 16px;
+    }
+
+    .photo-frame {
+        padding: 5px 5px 22px 5px;
+    }
+
+    .photo-frame img {
+        width: 90px;
+        height: 90px;
+    }
+
+    .frame-label {
+        font-size: 0.65rem;
     }
 }
