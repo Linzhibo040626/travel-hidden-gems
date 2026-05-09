@@ -176,6 +176,21 @@ a:hover {
     align-items: center;
     gap: 12px;
 }
+.nav-avatar-link {
+    display: flex;
+    align-items: center;
+}
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border);
+    transition: border-color 0.2s;
+}
+.nav-avatar:hover {
+    border-color: var(--primary);
+}
 
 /* Buttons */
 .btn {
@@ -659,6 +674,20 @@ a:hover {
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
     padding: 24px;
+}
+.profile-logout {
+    margin-top: 24px;
+    text-align: center;
+}
+.btn-logout {
+    width: 100%;
+    max-width: 300px;
+    color: #ef4444;
+    border-color: #ef4444;
+}
+.btn-logout:hover {
+    background: #ef4444;
+    color: #fff;
 }
 
 .profile-posts h3 {

@@ -35,9 +35,19 @@ const Auth = {
 
         if (this.isLoggedIn()) {
             const user = this.getUser();
+            const cached = localStorage.getItem('profileCache');
+            let avatarSrc = '';
+            if (cached) {
+                try { avatarSrc = JSON.parse(cached).avatar || ''; } catch {}
+            }
+            if (!avatarSrc) {
+                const ch = (user?.nickname || user?.username || 'U')[0].toUpperCase();
+                avatarSrc = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + ch + '</text></svg>';
+            }
             nav.innerHTML = `
-                <span class="user-info">&#128100; ${escapeHtml(user?.nickname || user?.username || '')}</span>
-                <button class="btn btn-outline" onclick="Auth.logout()">退出</button>
+                <a href="profile.html" class="nav-avatar-link">
+                    <img class="nav-avatar" src="${avatarSrc}" alt="头像">
+                </a>
             `;
         } else {
             nav.innerHTML = `
