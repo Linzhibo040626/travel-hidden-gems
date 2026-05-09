@@ -54,8 +54,15 @@ function renderChinaMap(container) {
     defs.innerHTML = `
         <filter id="provinceShadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/></filter>
         <filter id="riverGlow">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="riverShimmer">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blur"/>
+            <feSpecularLighting in="blur" surfaceScale="3" specularConstant="0.6" specularExponent="20" result="spec">
+                <fePointLight x="500" y="200" z="300"/>
+            </feSpecularLighting>
+            <feComposite in="SourceGraphic" in2="spec" operator="arithmetic" k1="0" k2="1" k3="0.3" k4="0"/>
         </filter>
         <filter id="starGlow">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
@@ -63,15 +70,25 @@ function renderChinaMap(container) {
             <feComposite in="color" in2="blur" operator="in" result="shadow"/>
             <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <linearGradient id="yellowRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#f39c12"/>
-            <stop offset="50%" stop-color="#f1c40f"/>
+        <linearGradient id="yellowRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%" spreadMethod="reflect">
+            <stop offset="0%" stop-color="#d4a017"/>
+            <stop offset="20%" stop-color="#f39c12"/>
+            <stop offset="40%" stop-color="#f7dc6f"/>
+            <stop offset="60%" stop-color="#f1c40f"/>
+            <stop offset="80%" stop-color="#e67e22"/>
             <stop offset="100%" stop-color="#d4a017"/>
+            <animate attributeName="x1" values="0%;100%;0%" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="x2" values="100%;200%;100%" dur="3s" repeatCount="indefinite"/>
         </linearGradient>
-        <linearGradient id="yangtzeRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#3498db"/>
-            <stop offset="50%" stop-color="#5dade2"/>
-            <stop offset="100%" stop-color="#2e86c1"/>
+        <linearGradient id="yangtzeRiverGradient" x1="0%" y1="0%" x2="100%" y2="0%" spreadMethod="reflect">
+            <stop offset="0%" stop-color="#2471a3"/>
+            <stop offset="20%" stop-color="#3498db"/>
+            <stop offset="40%" stop-color="#85c1e9"/>
+            <stop offset="60%" stop-color="#5dade2"/>
+            <stop offset="80%" stop-color="#2e86c1"/>
+            <stop offset="100%" stop-color="#2471a3"/>
+            <animate attributeName="x1" values="0%;100%;0%" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="x2" values="100%;200%;100%" dur="4s" repeatCount="indefinite"/>
         </linearGradient>
     `;
     svg.appendChild(defs);
