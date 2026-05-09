@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布推荐 - 秘境旅行</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">&#127757; 秘境旅行</a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="create-container">
+        <h2>分享你的秘境发现</h2>
+        <form id="createForm">
+            <div class="form-group">
+                <label for="title">标题</label>
+                <input type="text" id="title" required placeholder="给你的推荐起个吸引人的标题" maxlength="50">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="location">地点</label>
+                    <input type="text" id="location" required placeholder="具体地点名称">
+                </div>
+                <div class="form-group">
+                    <label for="category">分类</label>
+                    <select id="category" required>
+                        <option value="">请选择分类</option>
+                        <option value="小众景点">小众景点</option>
+                        <option value="大众景点的小众去处">大众景点的小众去处</option>
+                        <option value="避峰攻略">避峰攻略</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="region">地区</label>
+                    <select id="region" required>
+                        <option value="">请选择地区</option>
+                        <option value="华东">华东</option>
+                        <option value="华南">华南</option>
+                        <option value="华北">华北</option>
+                        <option value="西南">西南</option>
+                        <option value="西北">西北</option>
+                        <option value="东北">东北</option>
+                        <option value="华中">华中</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="season">适合季节</label>
+                    <select id="season">
+                        <option value="">请选择季节</option>
+                        <option value="春季">春季</option>
+                        <option value="夏季">夏季</option>
+                        <option value="秋季">秋季</option>
+                        <option value="冬季">冬季</option>
+                        <option value="四季皆宜">四季皆宜</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="imageUrl">封面图片链接</label>
+                <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg（可选）">
+            </div>
+            <div class="form-group">
+                <label for="content">详细介绍</label>
+                <textarea id="content" required placeholder="分享你的旅行体验、交通方式、注意事项等..." rows="8"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">发布推荐</button>
+        </form>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            showToast('请先登录', 'error');
+            setTimeout(() => window.location.href = 'login.html', 1000);
+        }
+        Auth.updateNav();
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('title').value.trim(),
+                location: document.getElementById('location').value.trim(),
+                category: document.getElementById('category').value,
+                region: document.getElementById('region').value,
+                season: document.getElementById('season').value,
+                image_url: document.getElementById('imageUrl').value.trim(),
+                content: document.getElementById('content').value.trim()
+            };
+
+            if (!data.title || !data.location || !data.category || !data.region || !data.content) {
+                showToast('请填写必填项', 'error');
+                return;
+            }
+
+            try {
+                await API.createPost(data);
+                showToast('发布成功！', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1000);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

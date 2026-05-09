@@ -1,0 +1,14 @@
+{
+  "name": "travel-hidden-gems",
+  "version": "1.0.0",
+  "description": "小众旅游推荐社区",
+  "scripts": {
+    "dev": "npx wrangler pages dev . --port 8080",
+    "dev:api": "cd workers && npx wrangler dev",
+    "deploy": "npx wrangler pages deploy .",
+    "deploy:api": "cd workers && npx wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

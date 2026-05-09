@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 秘境旅行</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">&#127757; 秘境旅行</a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions">
+            <a href="login.html" class="btn btn-outline">登录</a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+        <h2>加入秘境旅行</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required placeholder="请输入用户名（2-20个字符）" minlength="2" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required placeholder="请输入密码（至少6位）" minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="请再次输入密码">
+            </div>
+            <button type="submit" class="btn btn-primary">注册</button>
+        </form>
+        <p class="auth-link">已有账号？<a href="login.html">立即登录</a></p>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!username || !password) return;
+            if (password !== confirmPassword) {
+                showToast('两次密码输入不一致', 'error');
+                return;
+            }
+            if (password.length < 6) {
+                showToast('密码至少需要6位', 'error');
+                return;
+            }
+
+            try {
+                await Auth.register(username, password);
+                showToast('注册成功，即将跳转登录', 'success');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

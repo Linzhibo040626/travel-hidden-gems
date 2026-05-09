@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帖子详情 - 秘境旅行</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">&#127757; 秘境旅行</a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="post-detail" id="postDetail">
+        <!-- Loaded dynamically -->
+    </div>
+
+    <div class="comments-section" id="commentsSection">
+        <h3>评论</h3>
+        <div class="comment-form" id="commentForm" style="display:none;">
+            <input type="text" id="commentInput" placeholder="写下你的评论...">
+            <button class="btn btn-primary" id="commentBtn">发表</button>
+        </div>
+        <div id="commentsList"></div>
+    </div>
+
+    <footer class="footer">
+        <p>秘境旅行 - 发现不一样的风景</p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.updateNav();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+
+        if (!postId) {
+            window.location.href = 'index.html';
+        }
+
+        let currentPost = null;
+
+        async function loadPost() {
+            try {
+                currentPost = await API.getPost(postId);
+                renderPost(currentPost);
+                loadComments();
+            } catch (err) {
+                showToast('加载失败', 'error');
+            }
+        }
+
+        function renderPost(post) {
+            const detail = document.getElementById('postDetail');
+            const imageHtml = post.image_url
+                ? `<img class="post-detail-image" src="${escapeHtml(post.image_url)}" alt="${escapeHtml(post.title)}">`
+                : '';
+
+            detail.innerHTML = `
+                ${imageHtml}
+                <div class="post-detail-body">
+                    <h1 class="post-detail-title">${escapeHtml(post.title)}</h1>
+                    <div class="post-detail-info">
+                        <span>&#128205; ${escapeHtml(post.location)}</span>
+                        <span>&#128196; ${escapeHtml(post.category)}</span>
+                        <span>&#127759; ${escapeHtml(post.region || '')}</span>
+                        ${post.season ? `<span>&#127808; ${escapeHtml(post.season)}</span>` : ''}
+                        <span>&#128100; ${escapeHtml(post.username || '匿名')}</span>
+                        <span>${formatTime(post.created_at)}</span>
+                    </div>
+                    <div class="post-detail-content">${escapeHtml(post.content)}</div>
+                    <div class="post-actions">
+                        <button class="like-btn ${post.user_liked ? 'liked' : ''}" id="likeBtn" onclick="toggleLike()">
+                            &#10084; <span id="likeCount">${post.likes_count || 0}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function toggleLike() {
+            if (!Auth.isLoggedIn()) {
+                showToast('请先登录', 'error');
+                return;
+            }
+            try {
+                const result = await API.toggleLike(postId);
+                const btn = document.getElementById('likeBtn');
+                const count = document.getElementById('likeCount');
+                if (result.liked) {
+                    btn.classList.add('liked');
+                } else {
+                    btn.classList.remove('liked');
+                }
+                count.textContent = result.likes_count;
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function loadComments() {
+            try {
+                const comments = await API.getComments(postId);
+                const list = document.getElementById('commentsList');
+                if (comments.length === 0) {
+                    list.innerHTML = '<p style="color:var(--gray-400);padding:12px 0;">暂无评论，来说两句吧</p>';
+                } else {
+                    list.innerHTML = comments.map(c => `
+                        <div class="comment-item">
+                            <span class="comment-author">${escapeHtml(c.username)}</span>
+                            <span class="comment-time">${formatTime(c.created_at)}</span>
+                            <p class="comment-text">${escapeHtml(c.content)}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Failed to load comments', err);
+            }
+        }
+
+        if (Auth.isLoggedIn()) {
+            document.getElementById('commentForm').style.display = 'flex';
+        }
+
+        document.getElementById('commentBtn').addEventListener('click', async () => {
+            const input = document.getElementById('commentInput');
+            const content = input.value.trim();
+            if (!content) return;
+
+            try {
+                await API.addComment(postId, content);
+                input.value = '';
+                loadComments();
+                showToast('评论成功', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        document.getElementById('commentInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('commentBtn').click();
+            }
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatTime(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('zh-CN');
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>
