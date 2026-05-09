@@ -7,6 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mapContainer && typeof renderChinaMap === 'function') {
         renderChinaMap(mapContainer);
     }
+
+    const clock = document.getElementById('heroClock');
+    if (clock) {
+        function updateClock() {
+            const now = new Date();
+            const beijing = new Date(now.getTime() + (now.getTimezoneOffset() + 480) * 60000);
+            const y = beijing.getFullYear();
+            const mo = String(beijing.getMonth() + 1).padStart(2, '0');
+            const d = String(beijing.getDate()).padStart(2, '0');
+            const h = String(beijing.getHours()).padStart(2, '0');
+            const mi = String(beijing.getMinutes()).padStart(2, '0');
+            const s = String(beijing.getSeconds()).padStart(2, '0');
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const w = weekdays[beijing.getDay()];
+            clock.textContent = `${y}年${mo}月${d}日 星期${w} ${h}:${mi}:${s}`;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
 });
 
 function switchView(view) {

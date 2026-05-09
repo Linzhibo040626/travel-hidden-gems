@@ -270,6 +270,14 @@ a:hover {
     z-index: 1;
 }
 
+.hero-clock {
+    font-size: 0.95rem;
+    color: #A8B8C8;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    font-variant-numeric: tabular-nums;
+}
+
 .hero-title {
     font-size: 2.5rem;
     font-weight: 300;
