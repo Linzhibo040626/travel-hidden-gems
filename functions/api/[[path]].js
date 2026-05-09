@@ -1064,8 +1064,15 @@ async function handleFragmentDraw(request, env) {
 
 // --- Temporary Seed Handler ---
 async function handleSeedPosts(request, env) {
-    const { secret, posts } = await request.json();
+    const { secret, posts, delete_ids } = await request.json();
     if (secret !== 'SEED_2026_TRAVEL') return json({ error: '无权限' }, 403);
+
+    if (delete_ids && delete_ids.length > 0) {
+        for (const id of delete_ids) {
+            await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
+        }
+        return json({ deleted: delete_ids.length });
+    }
 
     let admin = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official_admin').first();
     if (!admin) {
