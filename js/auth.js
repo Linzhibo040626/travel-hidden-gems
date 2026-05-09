@@ -106,3 +106,33 @@ function setupGlobalSearch() {
 }
 
 document.addEventListener('DOMContentLoaded', setupGlobalSearch);
+
+async function updateUnreadBadges() {
+    if (!Auth.isLoggedIn()) return;
+    try {
+        const [msgData, notifData] = await Promise.all([
+            API.getMessagesUnreadCount(),
+            API.getNotificationsUnreadCount()
+        ]);
+        const msgBadge = document.getElementById('badgeMessages');
+        const notifBadge = document.getElementById('badgeNotifications');
+        if (msgBadge) {
+            if (msgData.count > 0) {
+                msgBadge.textContent = msgData.count > 99 ? '99+' : msgData.count;
+                msgBadge.style.display = '';
+            } else {
+                msgBadge.style.display = 'none';
+            }
+        }
+        if (notifBadge) {
+            if (notifData.count > 0) {
+                notifBadge.textContent = notifData.count > 99 ? '99+' : notifData.count;
+                notifBadge.style.display = '';
+            } else {
+                notifBadge.style.display = 'none';
+            }
+        }
+    } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', updateUnreadBadges);

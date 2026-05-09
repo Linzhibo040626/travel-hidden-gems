@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私信 - 别处游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">
+            <img src="logo.svg" alt="别处游" class="nav-logo-img">
+            <span class="nav-logo-text">别处游</span>
+        </a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="chat-page">
+        <div class="chat-sidebar" id="chatSidebar">
+            <div class="chat-sidebar-header">
+                <h3>消息</h3>
+            </div>
+            <div class="chat-list" id="chatList">
+                <div class="empty-state" id="emptyChats">
+                    <p>暂无消息</p>
+                </div>
+            </div>
+        </div>
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-window-placeholder" id="chatPlaceholder">
+                <p>选择一个会话开始聊天</p>
+            </div>
+            <div class="chat-window-active" id="chatActive" style="display:none;">
+                <div class="chat-window-header">
+                    <button class="chat-back-btn" id="chatBackBtn" onclick="showChatList()">&#8592;</button>
+                    <span id="chatTargetName"></span>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()">
+                    <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            showToast('请先登录', 'error');
+            setTimeout(() => window.location.href = 'login.html', 1000);
+        }
+        Auth.updateNav();
+
+        let currentChatUser = null;
+        let pollTimer = null;
+        const currentUser = Auth.getUser();
+
+        function defaultAvatar(username) {
+            const ch = username ? username[0].toUpperCase() : 'U';
+            return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + ch + '</text></svg>';
+        }
+
+        async function loadConversations() {
+            try {
+                const convos = await API.getConversations();
+                const list = document.getElementById('chatList');
+                const empty = document.getElementById('emptyChats');
+                if (convos.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = convos.map(c => `
+                    <div class="chat-item ${currentChatUser == c.user_id ? 'active' : ''}" onclick="openChat(${c.user_id}, '${escapeHtml(c.nickname || c.username)}')">
+                        <img class="chat-item-avatar" src="${c.avatar || defaultAvatar(c.username)}" alt="">
+                        <div class="chat-item-info">
+                            <div class="chat-item-top">
+                                <span class="chat-item-name">${escapeHtml(c.nickname || c.username)}</span>
+                                <span class="chat-item-time">${formatTime(c.last_time)}</span>
+                            </div>
+                            <p class="chat-item-preview">${escapeHtml(c.last_message || '')}</p>
+                        </div>
+                        ${c.unread_count > 0 ? `<span class="badge">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function openChat(userId, name) {
+            currentChatUser = userId;
+            document.getElementById('chatPlaceholder').style.display = 'none';
+            document.getElementById('chatActive').style.display = 'flex';
+            document.getElementById('chatTargetName').textContent = name;
+            document.querySelector('.chat-page').classList.add('chat-open');
+            await loadMessages();
+            await API.markRead(userId);
+            loadConversations();
+        }
+
+        function showChatList() {
+            document.querySelector('.chat-page').classList.remove('chat-open');
+            currentChatUser = null;
+        }
+
+        async function loadMessages() {
+            if (!currentChatUser) return;
+            try {
+                const messages = await API.getMessages(currentChatUser);
+                const container = document.getElementById('chatMessages');
+                container.innerHTML = messages.map(m => `
+                    <div class="chat-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">
+                        <p>${escapeHtml(m.content)}</p>
+                        <span class="bubble-time">${formatTime(m.created_at)}</span>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function sendMsg() {
+            const input = document.getElementById('chatInput');
+            const content = input.value.trim();
+            if (!content || !currentChatUser) return;
+            input.value = '';
+            try {
+                await API.sendMessage(currentChatUser, content);
+                await loadMessages();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // Poll for new messages
+        function startPolling() {
+            pollTimer = setInterval(() => {
+                if (currentChatUser) loadMessages();
+                loadConversations();
+            }, 5000);
+        }
+
+        // Check URL param for direct chat
+        const params = new URLSearchParams(window.location.search);
+        const targetUser = params.get('user');
+        if (targetUser) {
+            (async () => {
+                const friends = await API.getFriends();
+                const friend = friends.find(f => f.id == targetUser);
+                if (friend) {
+                    openChat(friend.id, friend.nickname || friend.username);
+                }
+            })();
+        }
+
+        loadConversations();
+        startPolling();
+    </script>
+</body>
+</html>

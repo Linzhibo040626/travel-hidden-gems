@@ -103,5 +103,56 @@ const API = {
 
     async deletePost(postId) {
         return this.request('/posts/' + postId, { method: 'DELETE' });
+    },
+
+    // Friends
+    async searchUsers(q) {
+        return this.request('/users/search?q=' + encodeURIComponent(q));
+    },
+    async getFriends() {
+        return this.request('/friends');
+    },
+    async sendFriendRequest(targetUserId) {
+        return this.request('/friends/request', {
+            method: 'POST',
+            body: JSON.stringify({ target_user_id: targetUserId })
+        });
+    },
+    async respondFriendRequest(friendshipId, action) {
+        return this.request('/friends/respond', {
+            method: 'POST',
+            body: JSON.stringify({ friendship_id: friendshipId, action })
+        });
+    },
+
+    // Messages
+    async getConversations() {
+        return this.request('/messages/conversations');
+    },
+    async getMessages(userId) {
+        return this.request('/messages/' + userId);
+    },
+    async sendMessage(userId, content) {
+        return this.request('/messages/' + userId, {
+            method: 'POST',
+            body: JSON.stringify({ content })
+        });
+    },
+    async markRead(userId) {
+        return this.request('/messages/' + userId + '/read', { method: 'POST' });
+    },
+    async getMessagesUnreadCount() {
+        return this.request('/messages/unread-count');
+    },
+
+    // Notifications
+    async getNotifications() {
+        return this.request('/notifications');
+    },
+    async markNotificationsRead() {
+        return this.request('/notifications/read', { method: 'POST' });
+    },
+    async getNotificationsUnreadCount() {
+        return this.request('/notifications/unread-count');
     }
 };

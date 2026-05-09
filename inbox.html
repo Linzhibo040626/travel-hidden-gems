@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邮箱 - 别处游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">
+            <img src="logo.svg" alt="别处游" class="nav-logo-img">
+            <span class="nav-logo-text">别处游</span>
+        </a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="inbox-page">
+        <div class="inbox-header">
+            <h2>邮箱</h2>
+            <button class="btn btn-outline" onclick="markAllRead()">全部已读</button>
+        </div>
+        <div class="inbox-list" id="inboxList">
+            <div class="empty-state" id="emptyInbox">
+                <p>暂无通知</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            showToast('请先登录', 'error');
+            setTimeout(() => window.location.href = 'login.html', 1000);
+        }
+        Auth.updateNav();
+
+        async function loadNotifications() {
+            try {
+                const notifications = await API.getNotifications();
+                const list = document.getElementById('inboxList');
+                const empty = document.getElementById('emptyInbox');
+                if (notifications.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                list.innerHTML = notifications.map(n => `
+                    <div class="inbox-item ${n.is_read ? '' : 'unread'}">
+                        <div class="inbox-item-icon">${getIcon(n.type)}</div>
+                        <div class="inbox-item-content">
+                            <p>${escapeHtml(n.content)}</p>
+                            <span class="inbox-item-time">${formatTime(n.created_at)}</span>
+                        </div>
+                        ${n.type === 'friend_request' && n.friendship_id ? `
+                            <div class="inbox-item-actions">
+                                <button class="btn btn-primary btn-sm" onclick="respondFriend(${n.friendship_id}, 'accept', this)">接受</button>
+                                <button class="btn btn-outline btn-sm" onclick="respondFriend(${n.friendship_id}, 'reject', this)">拒绝</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function getIcon(type) {
+            switch (type) {
+                case 'friend_request': return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B5E6B" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>';
+                case 'friend_accepted': return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>';
+                default: return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+            }
+        }
+
+        async function respondFriend(friendshipId, action, btn) {
+            try {
+                const res = await API.respondFriendRequest(friendshipId, action);
+                showToast(res.message, 'success');
+                const actionsDiv = btn.parentElement;
+                actionsDiv.innerHTML = `<span class="inbox-item-done">${action === 'accept' ? '已添加' : '已拒绝'}</span>`;
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function markAllRead() {
+            try {
+                await API.markNotificationsRead();
+                showToast('已全部标记已读', 'success');
+                document.querySelectorAll('.inbox-item.unread').forEach(el => el.classList.remove('unread'));
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        loadNotifications();
+    </script>
+</body>
+</html>

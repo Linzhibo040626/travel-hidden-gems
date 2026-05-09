@@ -30,6 +30,37 @@ async function runMigrations(env) {
             used INTEGER DEFAULT 0
         )`).run();
     } catch {}
+    try {
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS friendships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            friend_id INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, friend_id)
+        )`).run();
+    } catch {}
+    try {
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            is_read INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`).run();
+    } catch {}
+    try {
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            related_id INTEGER,
+            is_read INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`).run();
+    } catch {}
     migrated = true;
 }
 
@@ -99,6 +130,50 @@ export async function onRequest(context) {
         }
         if (path === '/api/user/posts' && request.method === 'GET') {
             return await handleGetMyPosts(request, env);
+        }
+
+        // Friends routes
+        if (path === '/api/friends' && request.method === 'GET') {
+            return await handleGetFriends(request, env);
+        }
+        if (path === '/api/friends/request' && request.method === 'POST') {
+            return await handleFriendRequest(request, env);
+        }
+        if (path === '/api/friends/respond' && request.method === 'POST') {
+            return await handleFriendRespond(request, env);
+        }
+        if (path === '/api/users/search' && request.method === 'GET') {
+            return await handleSearchUsers(request, env);
+        }
+
+        // Messages routes
+        if (path === '/api/messages/conversations' && request.method === 'GET') {
+            return await handleGetConversations(request, env);
+        }
+        if (path === '/api/messages/unread-count' && request.method === 'GET') {
+            return await handleMessagesUnreadCount(request, env);
+        }
+        const msgMatch = path.match(/^\/api\/messages\/(\d+)$/);
+        if (msgMatch && request.method === 'GET') {
+            return await handleGetMessages(msgMatch[1], request, env);
+        }
+        if (msgMatch && request.method === 'POST') {
+            return await handleSendMessage(msgMatch[1], request, env);
+        }
+        const msgReadMatch = path.match(/^\/api\/messages\/(\d+)\/read$/);
+        if (msgReadMatch && request.method === 'POST') {
+            return await handleMarkRead(msgReadMatch[1], request, env);
+        }
+
+        // Notifications routes
+        if (path === '/api/notifications' && request.method === 'GET') {
+            return await handleGetNotifications(request, env);
+        }
+        if (path === '/api/notifications/read' && request.method === 'POST') {
+            return await handleMarkNotificationsRead(request, env);
+        }
+        if (path === '/api/notifications/unread-count' && request.method === 'GET') {
+            return await handleNotificationsUnreadCount(request, env);
         }
 
         return json({ error: '未找到该接口' }, 404);
@@ -388,4 +463,217 @@ async function handleUpdatePost(postId, request, env) {
     ).bind(title, content, location, category, region || '', season || '', imageData, postId).run();
 
     return json({ message: '更新成功' });
+}
+
+// --- Friends Handlers ---
+
+async function handleSearchUsers(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const url = new URL(request.url);
+    const q = url.searchParams.get('q');
+    if (!q || q.trim().length < 1) return json([]);
+
+    const result = await env.DB.prepare(
+        'SELECT id, username, nickname, avatar FROM users WHERE (username LIKE ? OR nickname LIKE ?) AND id != ? LIMIT 20'
+    ).bind(`%${q}%`, `%${q}%`, user.id).all();
+
+    return json(result.results || []);
+}
+
+async function handleGetFriends(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare(`
+        SELECT u.id, u.username, u.nickname, u.avatar, f.created_at as friend_since
+        FROM friendships f
+        JOIN users u ON (CASE WHEN f.user_id = ? THEN f.friend_id ELSE f.user_id END) = u.id
+        WHERE (f.user_id = ? OR f.friend_id = ?) AND f.status = 'accepted'
+    `).bind(user.id, user.id, user.id).all();
+
+    return json(result.results || []);
+}
+
+async function handleFriendRequest(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const { target_user_id } = await request.json();
+    if (!target_user_id) return json({ error: '请指定用户' }, 400);
+    if (target_user_id === user.id) return json({ error: '不能添加自己为好友' }, 400);
+
+    const target = await env.DB.prepare('SELECT id, username FROM users WHERE id = ?').bind(target_user_id).first();
+    if (!target) return json({ error: '用户不存在' }, 404);
+
+    const existing = await env.DB.prepare(
+        'SELECT id, status FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
+    ).bind(user.id, target_user_id, target_user_id, user.id).first();
+
+    if (existing) {
+        if (existing.status === 'accepted') return json({ error: '你们已经是好友了' }, 400);
+        if (existing.status === 'pending') return json({ error: '已发送过申请，请等待对方回复' }, 400);
+    }
+
+    await env.DB.prepare('INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, ?)')
+        .bind(user.id, target_user_id, 'pending').run();
+
+    const senderName = user.username;
+    await env.DB.prepare('INSERT INTO notifications (user_id, type, content, related_id) VALUES (?, ?, ?, ?)')
+        .bind(target_user_id, 'friend_request', `${senderName} 请求添加你为好友`, user.id).run();
+
+    return json({ message: '好友申请已发送' });
+}
+
+async function handleFriendRespond(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const { friendship_id, action } = await request.json();
+    if (!friendship_id || !['accept', 'reject'].includes(action)) {
+        return json({ error: '参数错误' }, 400);
+    }
+
+    const friendship = await env.DB.prepare(
+        'SELECT * FROM friendships WHERE id = ? AND friend_id = ? AND status = ?'
+    ).bind(friendship_id, user.id, 'pending').first();
+
+    if (!friendship) return json({ error: '申请不存在或已处理' }, 404);
+
+    const newStatus = action === 'accept' ? 'accepted' : 'rejected';
+    await env.DB.prepare('UPDATE friendships SET status = ? WHERE id = ?').bind(newStatus, friendship_id).run();
+
+    if (action === 'accept') {
+        const responder = await env.DB.prepare('SELECT nickname, username FROM users WHERE id = ?').bind(user.id).first();
+        const name = responder.nickname || responder.username;
+        await env.DB.prepare('INSERT INTO notifications (user_id, type, content, related_id) VALUES (?, ?, ?, ?)')
+            .bind(friendship.user_id, 'friend_accepted', `${name} 接受了你的好友申请`, user.id).run();
+    }
+
+    return json({ message: action === 'accept' ? '已添加好友' : '已拒绝申请' });
+}
+
+// --- Messages Handlers ---
+
+async function handleGetConversations(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare(`
+        SELECT
+            u.id as user_id, u.username, u.nickname, u.avatar,
+            m.content as last_message, m.created_at as last_time,
+            (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+        FROM users u
+        INNER JOIN (
+            SELECT
+                CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as other_id,
+                MAX(id) as max_id
+            FROM messages
+            WHERE sender_id = ? OR receiver_id = ?
+            GROUP BY other_id
+        ) latest ON u.id = latest.other_id
+        INNER JOIN messages m ON m.id = latest.max_id
+        ORDER BY m.created_at DESC
+    `).bind(user.id, user.id, user.id, user.id).all();
+
+    return json(result.results || []);
+}
+
+async function handleGetMessages(userId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare(`
+        SELECT id, sender_id, receiver_id, content, is_read, created_at
+        FROM messages
+        WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+        ORDER BY created_at ASC LIMIT 100
+    `).bind(user.id, parseInt(userId), parseInt(userId), user.id).all();
+
+    return json(result.results || []);
+}
+
+async function handleSendMessage(userId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const { content } = await request.json();
+    if (!content || !content.trim()) return json({ error: '消息不能为空' }, 400);
+
+    const targetId = parseInt(userId);
+    const friendship = await env.DB.prepare(
+        'SELECT id FROM friendships WHERE ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)) AND status = ?'
+    ).bind(user.id, targetId, targetId, user.id, 'accepted').first();
+
+    if (!friendship) return json({ error: '只能给好友发消息' }, 403);
+
+    await env.DB.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
+        .bind(user.id, targetId, content.trim()).run();
+
+    return json({ message: '发送成功' }, 201);
+}
+
+async function handleMarkRead(userId, request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    await env.DB.prepare('UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0')
+        .bind(parseInt(userId), user.id).run();
+
+    return json({ message: '已标记已读' });
+}
+
+async function handleMessagesUnreadCount(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare('SELECT COUNT(*) as count FROM messages WHERE receiver_id = ? AND is_read = 0')
+        .bind(user.id).first();
+
+    return json({ count: result.count || 0 });
+}
+
+// --- Notifications Handlers ---
+
+async function handleGetNotifications(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50'
+    ).bind(user.id).all();
+
+    const notifications = result.results || [];
+    for (const n of notifications) {
+        if (n.type === 'friend_request' && !n.is_read) {
+            const friendship = await env.DB.prepare(
+                'SELECT id, status FROM friendships WHERE user_id = ? AND friend_id = ? AND status = ?'
+            ).bind(n.related_id, user.id, 'pending').first();
+            n.friendship_id = friendship ? friendship.id : null;
+        }
+    }
+
+    return json(notifications);
+}
+
+async function handleMarkNotificationsRead(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    await env.DB.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0')
+        .bind(user.id).run();
+
+    return json({ message: '已全部标记已读' });
+}
+
+async function handleNotificationsUnreadCount(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    const result = await env.DB.prepare('SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0')
+        .bind(user.id).first();
+
+    return json({ count: result.count || 0 });
 }
