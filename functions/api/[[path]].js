@@ -123,11 +123,6 @@ export async function onRequest(context) {
     await runMigrations(env);
 
     try {
-        // Temporary seed route
-        if (path === '/api/seed-posts' && request.method === 'POST') {
-            return await handleSeedPosts(request, env);
-        }
-
         // Auth routes
         if (path === '/api/auth/register' && request.method === 'POST') {
             return await handleRegister(request, env);
@@ -1062,36 +1057,3 @@ async function handleFragmentDraw(request, env) {
     return json({ ...result, fragments_count: updatedFrag.count });
 }
 
-// --- Temporary Seed Handler ---
-async function handleSeedPosts(request, env) {
-    const { secret, posts, delete_ids } = await request.json();
-    if (secret !== 'SEED_2026_TRAVEL') return json({ error: '无权限' }, 403);
-
-    if (delete_ids && delete_ids.length > 0) {
-        for (const id of delete_ids) {
-            await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
-        }
-        return json({ deleted: delete_ids.length });
-    }
-
-    let admin = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official_admin').first();
-    if (!admin) {
-        const hash = await hashPassword('Admin@Seed2026!');
-        await env.DB.prepare('INSERT OR IGNORE INTO users (username, password_hash, phone, nickname) VALUES (?, ?, ?, ?)')
-            .bind('official_admin', hash, '', '别处游官方').run();
-        admin = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official_admin').first();
-    }
-
-    const results = [];
-    for (const p of posts) {
-        try {
-            await env.DB.prepare(
-                'INSERT INTO posts (user_id, title, content, location, category, region, season, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            ).bind(admin.id, p.title, p.content, p.location, p.category, p.region, p.season, p.image_url || '').run();
-            results.push({ title: p.title, status: 'ok' });
-        } catch (e) {
-            results.push({ title: p.title, status: 'error', msg: e.message });
-        }
-    }
-    return json({ created: results.length, results });
-}
