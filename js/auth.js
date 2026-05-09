@@ -36,8 +36,7 @@ const Auth = {
         if (this.isLoggedIn()) {
             const user = this.getUser();
             nav.innerHTML = `
-                <a href="profile.html" class="user-info">&#128100; ${escapeHtml(user?.nickname || user?.username || '')}</a>
-                <a href="create.html" class="btn btn-accent">发布推荐</a>
+                <span class="user-info">&#128100; ${escapeHtml(user?.nickname || user?.username || '')}</span>
                 <button class="btn btn-outline" onclick="Auth.logout()">退出</button>
             `;
         } else {
