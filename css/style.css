@@ -1255,6 +1255,34 @@ a:hover {
     stroke-width: 3;
 }
 
+.river {
+    stroke-dasharray: 8, 4;
+    animation: riverFlow 2s linear infinite;
+}
+
+.river-yellow {
+    opacity: 0.85;
+}
+
+.river-yangtze {
+    opacity: 0.85;
+}
+
+@keyframes riverFlow {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+}
+
+.capital-star {
+    animation: starPulse 2s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes starPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
 .map-tooltip {
     display: none;
     position: absolute;

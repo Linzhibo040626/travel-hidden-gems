@@ -36,19 +36,11 @@ const CHINA_MAP_DATA = {
         { name: "香港", d: "M660.5,545 L659.1,549.6 L656.3,549.6 L649.3,549.6 L647.9,548.8 L649.3,545 L653.5,542.8 L656.3,542.8 L657.7,542.8 L657.7,545 L660.5,545 Z", color: "#f8a5c2" },
         { name: "澳门", d: "M640,548 L643,546 L645,548 L645,552 L642,554 L639,552 Z", color: "#778beb" }
     ],
-    seas: {
-        nineDashLine: [
-            "M693,570 L698,590 L702,610",
-            "M705,625 L710,645 L712,665",
-            "M712,680 L708,700 L700,718",
-            "M692,730 L680,742 L665,752",
-            "M650,758 L632,762 L615,760",
-            "M600,755 L585,748 L572,738",
-            "M562,725 L555,710 L552,692",
-            "M552,675 L555,658 L560,640",
-            "M565,625 L572,610 L580,598"
-        ]
-    }
+    rivers: {
+        yellowRiver: "M373,336.5 L396.8,331.3 L428.6,319.2 L436.5,310.6 L444.4,302 L460.3,296.8 L484.1,307.1 L500,302 L515.9,293.3 L523.8,284.7 L536.5,276.1 L539.7,267.5 L547.6,258.8 L555.6,250.2 L563.5,241.6 L571.4,232.9 L579.4,227.8 L587.3,232.9 L595.2,250.2 L603.2,267.5 L595.2,284.7 L587.3,302 L595.2,319.2 L603.2,327.8 L619,331.3 L634.9,331.3 L650.8,327.8 L666.7,319.2 L682.5,310.6 L698.4,302 L714.3,293.3 L722.2,284.7 L730.2,279.5",
+        yangtzeRiver: "M285.7,353.7 L317.5,362.4 L349.2,362.4 L381,371 L412.7,440 L428.6,457.3 L436.5,469.3 L452.4,474.5 L468.3,465.9 L484.1,440 L500,431.4 L515.9,431.4 L531.7,422.7 L539.7,414.1 L547.6,405.5 L563.5,405.5 L579.4,405.5 L595.2,410.7 L611.1,414.1 L627,417.6 L642.9,422.7 L650.8,417.6 L658.7,405.5 L674.6,414.1 L682.5,417.6 L690.5,414.1 L698.4,405.5 L706.3,396.9 L714.3,388.2 L722.2,383.1 L738.1,379.6 L754,383.1 L769.8,391.7"
+    },
+    capital: { name: "北京", x: 688.9, y: 243.3 }
 };
 
 function renderChinaMap(container) {
@@ -62,6 +54,18 @@ function renderChinaMap(container) {
     filter.setAttribute("id", "provinceShadow");
     filter.innerHTML = '<feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/>';
     defs.appendChild(filter);
+
+    const starSymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+    starSymbol.setAttribute("id", "capitalStar");
+    starSymbol.setAttribute("viewBox", "0 0 24 24");
+    const starPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    starPath.setAttribute("d", "M12,2 L14.9,8.6 L22,9.3 L16.8,14 L18.2,21 L12,17.5 L5.8,21 L7.2,14 L2,9.3 L9.1,8.6 Z");
+    starPath.setAttribute("fill", "#e74c3c");
+    starPath.setAttribute("stroke", "#c0392b");
+    starPath.setAttribute("stroke-width", "0.5");
+    starSymbol.appendChild(starPath);
+    defs.appendChild(starSymbol);
+
     svg.appendChild(defs);
 
     CHINA_MAP_DATA.provinces.forEach(province => {
@@ -79,17 +83,35 @@ function renderChinaMap(container) {
         svg.appendChild(path);
     });
 
-    CHINA_MAP_DATA.seas.nineDashLine.forEach(d => {
-        const dashPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        dashPath.setAttribute("d", d);
-        dashPath.setAttribute("fill", "none");
-        dashPath.setAttribute("stroke", "#2471a3");
-        dashPath.setAttribute("stroke-width", "2");
-        dashPath.setAttribute("stroke-dasharray", "6,4");
-        dashPath.setAttribute("stroke-linecap", "round");
-        dashPath.setAttribute("class", "nine-dash-line");
-        svg.appendChild(dashPath);
-    });
+    const yellowRiver = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    yellowRiver.setAttribute("d", CHINA_MAP_DATA.rivers.yellowRiver);
+    yellowRiver.setAttribute("fill", "none");
+    yellowRiver.setAttribute("stroke", "#d4a017");
+    yellowRiver.setAttribute("stroke-width", "2.5");
+    yellowRiver.setAttribute("stroke-linecap", "round");
+    yellowRiver.setAttribute("stroke-linejoin", "round");
+    yellowRiver.setAttribute("class", "river river-yellow");
+    svg.appendChild(yellowRiver);
+
+    const yangtzeRiver = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    yangtzeRiver.setAttribute("d", CHINA_MAP_DATA.rivers.yangtzeRiver);
+    yangtzeRiver.setAttribute("fill", "none");
+    yangtzeRiver.setAttribute("stroke", "#2980b9");
+    yangtzeRiver.setAttribute("stroke-width", "2.5");
+    yangtzeRiver.setAttribute("stroke-linecap", "round");
+    yangtzeRiver.setAttribute("stroke-linejoin", "round");
+    yangtzeRiver.setAttribute("class", "river river-yangtze");
+    svg.appendChild(yangtzeRiver);
+
+    const cap = CHINA_MAP_DATA.capital;
+    const starUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    starUse.setAttribute("href", "#capitalStar");
+    starUse.setAttribute("x", cap.x - 10);
+    starUse.setAttribute("y", cap.y - 10);
+    starUse.setAttribute("width", "20");
+    starUse.setAttribute("height", "20");
+    starUse.setAttribute("class", "capital-star");
+    svg.appendChild(starUse);
 
     container.innerHTML = '';
     container.appendChild(svg);
