@@ -135,11 +135,6 @@ export async function onRequest(context) {
             return await handleSendSms(request, env);
         }
 
-        // Batch seed route (temporary)
-        if (path === '/api/seed-posts' && request.method === 'POST') {
-            return await handleSeedPosts(request, env);
-        }
-
         // Posts routes
         if (path === '/api/posts' && request.method === 'GET') {
             return await handleGetPosts(request, env);
@@ -279,27 +274,6 @@ async function handleSendSms(request, env) {
         .bind(phone, code, expiresAt).run();
 
     return json({ message: '验证码已发送' });
-}
-
-async function handleSeedPosts(request, env) {
-    const { posts, secret } = await request.json();
-    if (secret !== 'biechuyo-seed-2024') return json({ error: 'forbidden' }, 403);
-    let adminUser = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official').first();
-    if (!adminUser) {
-        const passwordHash = await hashPassword('official123456');
-        await env.DB.prepare('INSERT INTO users (username, password_hash, phone, nickname) VALUES (?, ?, ?, ?)')
-            .bind('official', passwordHash, '10000000000', '别处游官方').run();
-        adminUser = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind('official').first();
-    }
-    let count = 0;
-    for (const p of posts) {
-        const imageData = p.images && p.images.length > 0 ? JSON.stringify(p.images) : '';
-        await env.DB.prepare(
-            'INSERT INTO posts (user_id, title, content, location, category, region, season, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        ).bind(adminUser.id, p.title, p.content, p.location, p.category, p.region || '', p.season || '', imageData).run();
-        count++;
-    }
-    return json({ message: `成功创建${count}篇帖子` });
 }
 
 // --- Auth Handlers ---
