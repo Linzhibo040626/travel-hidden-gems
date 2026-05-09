@@ -1243,23 +1243,18 @@ a:hover {
 }
 
 .step-1-province {
-    stroke: rgba(255, 255, 255, 0.9);
-    stroke-width: 2;
-    filter: brightness(1.05);
+    stroke: rgba(255, 255, 255, 0.95);
+    stroke-width: 2.2;
 }
 
 .step-2-province {
-    stroke: rgba(255, 255, 255, 0.8);
-    stroke-width: 1.6;
+    stroke: rgba(255, 255, 255, 0.85);
+    stroke-width: 1.8;
 }
 
 .step-3-province {
     stroke: rgba(255, 255, 255, 0.7);
     stroke-width: 1.2;
-}
-
-.step-1, .step-2, .step-3 {
-    transition: transform 0.3s ease;
 }
 
 .province-path:hover {

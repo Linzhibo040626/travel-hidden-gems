@@ -102,23 +102,42 @@ function renderChinaMap(container) {
         if (step2.includes(name)) return 2;
         return 3;
     }
+    const stepOffset = { 1: { dx: 0, dy: -18 }, 2: { dx: 0, dy: -8 }, 3: { dx: 0, dy: 0 } };
 
-    const g3 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g3.setAttribute("class", "step-3");
-    const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g2.setAttribute("class", "step-2");
-    g2.setAttribute("transform", "translate(-2, -6)");
-    const g1 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g1.setAttribute("class", "step-1");
-    g1.setAttribute("transform", "translate(-4, -14)");
+    const gWalls = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    gWalls.setAttribute("class", "step-walls");
+    const gSurface3 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const gWalls2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const gSurface2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const gWalls1 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const gSurface1 = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     CHINA_MAP_DATA.provinces.forEach(province => {
         const step = getStep(province.name);
+        const offset = stepOffset[step];
+
+        if (step < 3) {
+            const layers = step === 1 ? 6 : 3;
+            for (let i = layers; i >= 1; i--) {
+                const wall = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                wall.setAttribute("d", province.d);
+                const ratio = i / layers;
+                const wy = offset.dy * (1 - ratio);
+                wall.setAttribute("transform", `translate(0, ${wy})`);
+                const darkness = step === 1 ? 0.12 + ratio * 0.15 : 0.1 + ratio * 0.12;
+                wall.setAttribute("fill", step === 1 ? `rgba(80, 40, 10, ${darkness})` : `rgba(100, 60, 20, ${darkness})`);
+                wall.setAttribute("stroke", "none");
+                if (step === 1) gWalls1.appendChild(wall);
+                else gWalls2.appendChild(wall);
+            }
+        }
+
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", province.d);
         path.setAttribute("data-province", province.name);
         path.setAttribute("class", `province-path step-${step}-province`);
         path.setAttribute("fill", province.color);
+        path.setAttribute("transform", `translate(${offset.dx}, ${offset.dy})`);
         if (step === 1) path.setAttribute("filter", "url(#step1Shadow)");
         else if (step === 2) path.setAttribute("filter", "url(#step2Shadow)");
         else path.setAttribute("filter", "url(#step3Shadow)");
@@ -127,14 +146,16 @@ function renderChinaMap(container) {
         path.addEventListener("mouseleave", hideTooltip);
         path.addEventListener("click", () => selectProvince(province.name));
 
-        if (step === 1) g1.appendChild(path);
-        else if (step === 2) g2.appendChild(path);
-        else g3.appendChild(path);
+        if (step === 3) gSurface3.appendChild(path);
+        else if (step === 2) gSurface2.appendChild(path);
+        else gSurface1.appendChild(path);
     });
 
-    svg.appendChild(g3);
-    svg.appendChild(g2);
-    svg.appendChild(g1);
+    svg.appendChild(gSurface3);
+    svg.appendChild(gWalls2);
+    svg.appendChild(gSurface2);
+    svg.appendChild(gWalls1);
+    svg.appendChild(gSurface1);
 
     const yellowBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
     yellowBg.setAttribute("d", CHINA_MAP_DATA.rivers.yellowRiver);
