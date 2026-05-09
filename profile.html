@@ -82,9 +82,37 @@
 
         let avatarData = '';
 
+        function showCachedProfile() {
+            const cached = localStorage.getItem('profileCache');
+            const user = Auth.getUser();
+            if (cached) {
+                const p = JSON.parse(cached);
+                document.getElementById('profileUsername').textContent = p.nickname || p.username || '';
+                document.getElementById('profileNickname').value = p.nickname || '';
+                document.getElementById('profileQQ').value = p.qq || '';
+                document.getElementById('profileGender').value = p.gender || '';
+                document.getElementById('profileSig').value = p.signature || '';
+                document.getElementById('profileSignature').textContent = p.signature || '这个人很懒，什么都没写~';
+                if (p.avatar) {
+                    document.getElementById('avatarImg').src = p.avatar;
+                } else {
+                    document.getElementById('avatarImg').src = defaultAvatar(p.username);
+                }
+            } else if (user) {
+                document.getElementById('profileUsername').textContent = user.nickname || user.username || '';
+                document.getElementById('avatarImg').src = defaultAvatar(user.username);
+            }
+        }
+
+        function defaultAvatar(username) {
+            const ch = username ? username[0].toUpperCase() : 'U';
+            return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + ch + '</text></svg>';
+        }
+
         async function loadProfile() {
             try {
                 const profile = await API.getProfile();
+                localStorage.setItem('profileCache', JSON.stringify(profile));
                 document.getElementById('profileUsername').textContent = profile.nickname || profile.username;
                 document.getElementById('profileNickname').value = profile.nickname || '';
                 document.getElementById('profileQQ').value = profile.qq || '';
@@ -94,7 +122,7 @@
                 if (profile.avatar) {
                     document.getElementById('avatarImg').src = profile.avatar;
                 } else {
-                    document.getElementById('avatarImg').src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + (profile.username ? profile.username[0].toUpperCase() : 'U') + '</text></svg>';
+                    document.getElementById('avatarImg').src = defaultAvatar(profile.username);
                 }
             } catch (err) {
                 console.error(err);
@@ -171,6 +199,9 @@
                     stored.nickname = data.nickname;
                     localStorage.setItem('user', JSON.stringify(stored));
                 }
+                const cached = JSON.parse(localStorage.getItem('profileCache') || '{}');
+                Object.assign(cached, data);
+                localStorage.setItem('profileCache', JSON.stringify(cached));
                 Auth.updateNav();
             } catch (err) {
                 showToast(err.message, 'error');
@@ -188,6 +219,7 @@
             }
         }
 
+        showCachedProfile();
         loadProfile();
         loadMyPosts();
     </script>

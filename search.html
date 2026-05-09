@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索 - 别处游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">
+            <img src="logo.svg" alt="别处游" class="nav-logo-img">
+            <span class="nav-logo-text">别处游</span>
+        </a>
+        <div class="nav-search">
+            <input type="text" id="searchInput" placeholder="搜索目的地、攻略..." autofocus>
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="search-page">
+        <div class="search-header">
+            <h2 id="searchTitle">搜索结果</h2>
+            <div class="search-filters">
+                <select id="filterCategory">
+                    <option value="">全部类型</option>
+                    <option value="小众景点">小众景点</option>
+                    <option value="大众景点的小众去处">大众景点的小众去处</option>
+                    <option value="避峰攻略">避峰攻略</option>
+                </select>
+                <select id="filterRegion">
+                    <option value="">全部地区</option>
+                    <option value="华东">华东</option>
+                    <option value="华南">华南</option>
+                    <option value="华北">华北</option>
+                    <option value="西南">西南</option>
+                    <option value="西北">西北</option>
+                    <option value="东北">东北</option>
+                    <option value="华中">华中</option>
+                </select>
+                <select id="filterSeason">
+                    <option value="">全部季节</option>
+                    <option value="春季">春季</option>
+                    <option value="夏季">夏季</option>
+                    <option value="秋季">秋季</option>
+                    <option value="冬季">冬季</option>
+                    <option value="四季皆宜">四季皆宜</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="search-results">
+            <div class="post-grid" id="postGrid"></div>
+            <div class="empty-state" id="emptyState" style="display:none;">
+                <p id="emptyText">输入关键词开始搜索</p>
+                <a href="index.html" class="btn btn-outline">返回首页</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        Auth.updateNav();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const initQuery = urlParams.get('q') || '';
+        const searchInput = document.getElementById('searchInput');
+        if (initQuery) {
+            searchInput.value = initQuery;
+        }
+
+        function updateTitle() {
+            const q = searchInput.value.trim();
+            const title = document.getElementById('searchTitle');
+            if (q) {
+                title.textContent = `"${q}" 的搜索结果`;
+            } else {
+                title.textContent = '搜索结果';
+            }
+        }
+
+        function getFirstImage(imageUrl) {
+            if (!imageUrl) return '';
+            try {
+                const parsed = JSON.parse(imageUrl);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+            } catch {}
+            return imageUrl;
+        }
+
+        function renderPosts(posts) {
+            const grid = document.getElementById('postGrid');
+            const empty = document.getElementById('emptyState');
+            const emptyText = document.getElementById('emptyText');
+
+            if (posts.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                const q = searchInput.value.trim();
+                emptyText.textContent = q ? `没有找到与"${q}"相关的内容` : '输入关键词开始搜索';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+
+            grid.innerHTML = posts.map(post => {
+                const img = getFirstImage(post.image_url);
+                return `
+                <div class="post-card" onclick="window.location.href='post.html?id=${post.id}'">
+                    ${img
+                        ? `<img class="post-card-image" src="${escapeHtml(img)}" alt="${escapeHtml(post.title)}" loading="lazy">`
+                        : `<div class="post-card-image" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#E8F6F8,#D4EFE8);">&#127757;</div>`
+                    }
+                    <div class="post-card-body">
+                        <h3 class="post-card-title">${escapeHtml(post.title)}</h3>
+                        <div class="post-card-meta">
+                            <span>&#128205; ${escapeHtml(post.location)}</span>
+                            <span>&#128100; ${escapeHtml(post.nickname || '匿名')}</span>
+                        </div>
+                        <span class="post-card-tag">${escapeHtml(post.category)}</span>
+                        ${post.season ? `<span class="post-card-tag" style="margin-left:4px;">${escapeHtml(post.season)}</span>` : ''}
+                    </div>
+                    <div class="post-card-footer">
+                        <span>&#10084; ${post.likes_count || 0}</span>
+                        <span>${formatTime(post.created_at)}</span>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function doSearch() {
+            updateTitle();
+            const params = {
+                category: document.getElementById('filterCategory').value,
+                region: document.getElementById('filterRegion').value,
+                season: document.getElementById('filterSeason').value,
+                search: searchInput.value.trim()
+            };
+
+            const q = params.search;
+            const newUrl = q ? `search.html?q=${encodeURIComponent(q)}` : 'search.html';
+            history.replaceState(null, '', newUrl);
+
+            try {
+                const posts = await API.getPosts(params);
+                renderPosts(posts);
+            } catch (err) {
+                console.error(err);
+                renderPosts([]);
+            }
+        }
+
+        let timer;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(doSearch, 400);
+        });
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { clearTimeout(timer); doSearch(); }
+        });
+
+        ['filterCategory', 'filterRegion', 'filterSeason'].forEach(id => {
+            document.getElementById(id).addEventListener('change', doSearch);
+        });
+
+        if (initQuery) {
+            doSearch();
+        } else {
+            document.getElementById('postGrid').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

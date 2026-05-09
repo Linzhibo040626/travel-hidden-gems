@@ -81,13 +81,16 @@ function formatTime(dateStr) {
 function setupGlobalSearch() {
     const input = document.querySelector('.nav-search input');
     if (!input) return;
-    const isIndex = window.location.pathname.endsWith('index.html') || window.location.pathname === '/';
-    if (!isIndex) {
+    const isSearchPage = window.location.pathname.includes('search.html');
+    if (!isSearchPage) {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const q = input.value.trim();
-                window.location.href = 'index.html' + (q ? '?search=' + encodeURIComponent(q) : '');
+                window.location.href = 'search.html' + (q ? '?q=' + encodeURIComponent(q) : '');
             }
+        });
+        input.addEventListener('focus', () => {
+            window.location.href = 'search.html';
         });
     }
 }

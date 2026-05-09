@@ -1,14 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     Auth.updateNav();
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get('search');
-    if (searchQuery) {
-        const input = document.getElementById('searchInput');
-        if (input) input.value = searchQuery;
-    }
     loadPosts();
     setupFilters();
-    setupSearch();
 
     const mapContainer = document.getElementById('mapContainer');
     if (mapContainer && typeof renderChinaMap === 'function') {
@@ -18,6 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnProfile = document.getElementById('btnProfile');
     if (btnProfile && !Auth.isLoggedIn()) {
         btnProfile.style.display = 'none';
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('focus', () => {
+            window.location.href = 'search.html';
+        });
     }
 });
 
@@ -58,8 +58,7 @@ async function loadPosts() {
     const params = {
         category: document.getElementById('filterCategory')?.value || '',
         region: document.getElementById('filterRegion')?.value || '',
-        season: document.getElementById('filterSeason')?.value || '',
-        search: document.getElementById('searchInput')?.value || ''
+        season: document.getElementById('filterSeason')?.value || ''
     };
 
     try {
@@ -126,24 +125,6 @@ function setupFilters() {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', loadPosts);
-        }
-    });
-}
-
-function setupSearch() {
-    const input = document.getElementById('searchInput');
-    if (!input) return;
-
-    let timer;
-    input.addEventListener('input', () => {
-        clearTimeout(timer);
-        timer = setTimeout(loadPosts, 400);
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            clearTimeout(timer);
-            loadPosts();
         }
     });
 }
