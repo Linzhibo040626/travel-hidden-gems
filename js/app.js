@@ -185,7 +185,10 @@ function goToPage(page) {
     if (page < 1 || page > totalPages || page === currentPage) return;
     currentPage = page;
     loadPosts();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const filterBar = document.querySelector('.filter-bar');
+    if (filterBar) {
+        filterBar.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 function setupFilters() {

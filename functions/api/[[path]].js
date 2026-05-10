@@ -1138,6 +1138,10 @@ async function handlePlannerGenerate(request, env) {
 请根据以上信息生成详细的旅行规划，确保总花费不超过预算。`;
 
     try {
+        if (!env.AI) {
+            return json({ error: 'AI 服务未配置，请在 Cloudflare Pages 设置中绑定 Workers AI' }, 500);
+        }
+
         const aiResult = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
             messages: [
                 { role: 'system', content: systemPrompt },
