@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行计算器 - 别处游</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-logo">
+            <img src="logo.svg" alt="别处游" class="nav-logo-img">
+            <span class="nav-logo-text">别处游</span>
+        </a>
+        <div class="nav-search">
+            <input type="text" placeholder="搜索目的地、攻略...">
+        </div>
+        <div class="nav-actions" id="navActions"></div>
+    </nav>
+
+    <div class="planner-container">
+        <h2>旅行计算器</h2>
+        <p class="planner-subtitle">输入你的旅行条件，AI 为你生成详细规划</p>
+
+        <div class="planner-steps">
+            <div class="step-indicator active" data-step="1"><span>1</span>基本信息</div>
+            <div class="step-indicator" data-step="2"><span>2</span>玩法偏好</div>
+        </div>
+
+        <form id="plannerForm">
+            <div class="planner-step active" id="step1">
+                <div class="form-group">
+                    <label for="budget">总预算（元）</label>
+                    <input type="number" id="budget" required placeholder="如：3000" min="100">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="destination">目的地</label>
+                        <input type="text" id="destination" required placeholder="如：成都">
+                    </div>
+                    <div class="form-group">
+                        <label for="origin">出发地</label>
+                        <input type="text" id="origin" required placeholder="如：上海">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="days">天数</label>
+                        <input type="text" id="days" required placeholder="如：4天3晚">
+                    </div>
+                    <div class="form-group">
+                        <label for="people">出行人数</label>
+                        <input type="number" id="people" required placeholder="1" min="1" max="10" value="1">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary planner-next" onclick="nextStep()">下一步</button>
+            </div>
+
+            <div class="planner-step" id="step2">
+                <div class="form-group">
+                    <label>玩法选择</label>
+                    <div class="mode-cards">
+                        <div class="mode-card" data-mode="budget" onclick="selectMode(this)">
+                            <div class="mode-icon">🎒</div>
+                            <h4>穷游模式</h4>
+                            <p>青旅民宿、公共交通、平价美食</p>
+                        </div>
+                        <div class="mode-card" data-mode="intense" onclick="selectMode(this)">
+                            <div class="mode-icon">⚡</div>
+                            <h4>特种兵模式</h4>
+                            <p>紧凑行程、早出晚归、效率优先</p>
+                        </div>
+                        <div class="mode-card" data-mode="comfortable" onclick="selectMode(this)">
+                            <div class="mode-icon">🏨</div>
+                            <h4>舒适模式</h4>
+                            <p>品质酒店、打车包车、节奏适中</p>
+                        </div>
+                        <div class="mode-card" data-mode="luxury" onclick="selectMode(this)">
+                            <div class="mode-icon">👑</div>
+                            <h4>富游模式</h4>
+                            <p>高端酒店、专车接送、私人定制</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>兴趣偏好（可多选）</label>
+                    <div class="interest-tags">
+                        <span class="interest-tag" onclick="toggleTag(this)">美食探店</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">自然风光</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">人文历史</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">拍照打卡</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">户外运动</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">亲子出行</span>
+                        <span class="interest-tag" onclick="toggleTag(this)">情侣约会</span>
+                    </div>
+                </div>
+                <div class="planner-btns">
+                    <button type="button" class="btn btn-outline" onclick="prevStep()">上一步</button>
+                    <button type="button" class="btn btn-primary" onclick="generatePlan()">生成我的旅行规划</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="planner-loading" id="plannerLoading" style="display:none;">
+            <div class="loading-spinner"></div>
+            <p>AI 正在为你规划旅程，请稍候...</p>
+        </div>
+
+        <div class="planner-result" id="plannerResult" style="display:none;"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let selectedMode = '';
+        let selectedInterests = [];
+
+        function nextStep() {
+            const budget = document.getElementById('budget').value;
+            const destination = document.getElementById('destination').value;
+            const origin = document.getElementById('origin').value;
+            const days = document.getElementById('days').value;
+            if (!budget || !destination || !origin || !days) {
+                alert('请填写所有必填项');
+                return;
+            }
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
+            document.querySelectorAll('.step-indicator')[0].classList.remove('active');
+            document.querySelectorAll('.step-indicator')[1].classList.add('active');
+        }
+
+        function prevStep() {
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step1').classList.add('active');
+            document.querySelectorAll('.step-indicator')[1].classList.remove('active');
+            document.querySelectorAll('.step-indicator')[0].classList.add('active');
+        }
+
+        function selectMode(el) {
+            document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedMode = el.dataset.mode;
+        }
+
+        function toggleTag(el) {
+            el.classList.toggle('selected');
+            const tag = el.textContent;
+            if (selectedInterests.includes(tag)) {
+                selectedInterests = selectedInterests.filter(t => t !== tag);
+            } else {
+                selectedInterests.push(tag);
+            }
+        }
+
+        async function generatePlan() {
+            if (!selectedMode) {
+                alert('请选择一种玩法');
+                return;
+            }
+            const data = {
+                budget: Number(document.getElementById('budget').value),
+                destination: document.getElementById('destination').value,
+                origin: document.getElementById('origin').value,
+                days: document.getElementById('days').value,
+                people: Number(document.getElementById('people').value),
+                mode: selectedMode,
+                interests: selectedInterests
+            };
+
+            document.getElementById('plannerForm').style.display = 'none';
+            document.querySelector('.planner-steps').style.display = 'none';
+            document.getElementById('plannerLoading').style.display = 'flex';
+            document.getElementById('plannerResult').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/planner/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || '生成失败');
+                renderResult(result);
+            } catch (e) {
+                document.getElementById('plannerLoading').style.display = 'none';
+                document.getElementById('plannerResult').style.display = 'block';
+                document.getElementById('plannerResult').innerHTML = `
+                    <div class="result-error">
+                        <p>生成失败：${e.message}</p>
+                        <button class="btn btn-primary" onclick="resetPlanner()">重新规划</button>
+                    </div>`;
+            }
+        }
+
+        function renderResult(data) {
+            document.getElementById('plannerLoading').style.display = 'none';
+            const result = document.getElementById('plannerResult');
+            result.style.display = 'block';
+
+            let html = '<div class="result-header"><h3>你的旅行规划</h3><button class="btn btn-outline" onclick="resetPlanner()">重新规划</button></div>';
+
+            if (data.budget_breakdown) {
+                const b = data.budget_breakdown;
+                html += `<div class="result-section"><h4>💰 预算分配</h4><div class="budget-grid">`;
+                const items = [
+                    { label: '交通', data: b.transportation },
+                    { label: '住宿', data: b.accommodation },
+                    { label: '餐饮', data: b.food },
+                    { label: '门票/活动', data: b.tickets },
+                    { label: '其他', data: b.other }
+                ];
+                items.forEach(item => {
+                    if (item.data) {
+                        html += `<div class="budget-item"><span class="budget-label">${item.label}</span><span class="budget-amount">¥${item.data.amount}</span><span class="budget-detail">${item.data.detail}</span></div>`;
+                    }
+                });
+                html += `</div></div>`;
+            }
+
+            if (data.transportation) {
+                html += `<div class="result-section"><h4>🚄 交通方案</h4>`;
+                html += `<p><strong>往返交通：</strong>${data.transportation.to_destination}</p>`;
+                html += `<p><strong>当地交通：</strong>${data.transportation.local}</p></div>`;
+            }
+
+            if (data.accommodation) {
+                const a = data.accommodation;
+                html += `<div class="result-section"><h4>🏨 住宿推荐</h4>`;
+                html += `<p><strong>类型：</strong>${a.type}</p>`;
+                html += `<p><strong>推荐区域：</strong>${a.area}</p>`;
+                html += `<p><strong>价格区间：</strong>${a.price_range}</p>`;
+                if (a.recommendations && a.recommendations.length) {
+                    html += `<ul>${a.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>`;
+                }
+                html += `</div>`;
+            }
+
+            if (data.daily_schedule && data.daily_schedule.length) {
+                html += `<div class="result-section"><h4>📅 每日行程</h4>`;
+                data.daily_schedule.forEach(day => {
+                    html += `<div class="schedule-day"><h5>第${day.day}天</h5>`;
+                    ['morning', 'afternoon', 'evening'].forEach(period => {
+                        const labels = { morning: '上午', afternoon: '下午', evening: '晚上' };
+                        if (day[period]) {
+                            html += `<div class="schedule-item"><span class="schedule-period">${labels[period]}</span>`;
+                            html += `<div class="schedule-content"><p class="schedule-activity">${day[period].activity}</p>`;
+                            html += `<p class="schedule-detail">${day[period].detail}</p>`;
+                            if (day[period].cost) html += `<p class="schedule-cost">${day[period].cost}</p>`;
+                            html += `</div></div>`;
+                        }
+                    });
+                    html += `</div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (data.food_recommendations && data.food_recommendations.length) {
+                html += `<div class="result-section"><h4>🍜 美食推荐</h4><div class="food-list">`;
+                data.food_recommendations.forEach(f => {
+                    html += `<div class="food-item"><span class="food-name">${f.name}</span><span class="food-type">${f.type}</span><span class="food-price">${f.price}</span><p class="food-reason">${f.reason}</p></div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            if (data.tips && data.tips.length) {
+                html += `<div class="result-section"><h4>📝 注意事项</h4><ul>`;
+                data.tips.forEach(t => { html += `<li>${t}</li>`; });
+                html += `</ul></div>`;
+            }
+
+            result.innerHTML = html;
+        }
+
+        function resetPlanner() {
+            document.getElementById('plannerForm').style.display = 'block';
+            document.querySelector('.planner-steps').style.display = 'flex';
+            document.getElementById('plannerResult').style.display = 'none';
+            document.getElementById('plannerLoading').style.display = 'none';
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step1').classList.add('active');
+            document.querySelectorAll('.step-indicator')[1].classList.remove('active');
+            document.querySelectorAll('.step-indicator')[0].classList.add('active');
+        }
+    </script>
+</body>
+</html>

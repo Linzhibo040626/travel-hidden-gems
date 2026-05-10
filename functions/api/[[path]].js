@@ -248,6 +248,11 @@ export async function onRequest(context) {
             return await handleFragmentDraw(request, env);
         }
 
+        // Planner route
+        if (path === '/api/planner/generate' && request.method === 'POST') {
+            return await handlePlannerGenerate(request, env);
+        }
+
         return json({ error: '未找到该接口' }, 404);
     } catch (err) {
         return json({ error: '服务器错误: ' + err.message }, 500);
@@ -358,8 +363,11 @@ async function handleGetPosts(request, env) {
     const season = url.searchParams.get('season');
     const search = url.searchParams.get('search');
     const sort = url.searchParams.get('sort');
+    const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit')) || 12));
+    const offset = (page - 1) * limit;
 
-    let sql = 'SELECT posts.*, COALESCE(users.nickname, users.username) as nickname FROM posts JOIN users ON posts.user_id = users.id';
+    let baseSql = 'FROM posts JOIN users ON posts.user_id = users.id';
     const conditions = [];
     const params = [];
 
@@ -372,23 +380,37 @@ async function handleGetPosts(request, env) {
     }
 
     if (conditions.length > 0) {
-        sql += ' WHERE ' + conditions.join(' AND ');
+        baseSql += ' WHERE ' + conditions.join(' AND ');
     }
+
+    const countSql = 'SELECT COUNT(*) as total ' + baseSql;
+    const countStmt = env.DB.prepare(countSql);
+    const countResult = params.length > 0 ? await countStmt.bind(...params).first() : await countStmt.first();
+    const total = countResult?.total || 0;
+
+    let dataSql = 'SELECT posts.*, COALESCE(users.nickname, users.username) as nickname ' + baseSql;
 
     if (sort === 'likes') {
-        sql += ' ORDER BY posts.likes_count DESC, posts.created_at DESC';
+        dataSql += ' ORDER BY posts.likes_count DESC, posts.created_at DESC';
     } else if (sort === 'favorites') {
-        sql += ' ORDER BY posts.favorites_count DESC, posts.created_at DESC';
+        dataSql += ' ORDER BY posts.favorites_count DESC, posts.created_at DESC';
     } else if (sort === 'comments') {
-        sql += ' ORDER BY posts.comments_count DESC, posts.created_at DESC';
+        dataSql += ' ORDER BY posts.comments_count DESC, posts.created_at DESC';
     } else {
-        sql += ' ORDER BY posts.created_at DESC';
+        dataSql += ' ORDER BY posts.created_at DESC';
     }
-    sql += ' LIMIT 50';
+    dataSql += ` LIMIT ${limit} OFFSET ${offset}`;
 
-    const stmt = env.DB.prepare(sql);
-    const result = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
-    return json(result.results || []);
+    const dataStmt = env.DB.prepare(dataSql);
+    const dataResult = params.length > 0 ? await dataStmt.bind(...params).all() : await dataStmt.all();
+
+    return json({
+        posts: dataResult.results || [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+    });
 }
 
 async function handleGetPost(id, request, env) {
@@ -1055,5 +1077,85 @@ async function handleFragmentDraw(request, env) {
     const result = await performDraw(user.id, env);
     const updatedFrag = await env.DB.prepare('SELECT count FROM user_fragments WHERE user_id = ?').bind(user.id).first();
     return json({ ...result, fragments_count: updatedFrag.count });
+}
+
+async function handlePlannerGenerate(request, env) {
+    const { budget, destination, origin, days, people, mode, interests } = await request.json();
+    if (!budget || !destination || !origin || !days || !mode) {
+        return json({ error: '请填写所有必填项' }, 400);
+    }
+
+    const modeLabels = {
+        budget: '穷游模式（青旅民宿、公共交通、平价美食）',
+        intense: '特种兵模式（紧凑行程、早出晚归、效率优先）',
+        comfortable: '舒适模式（品质酒店、打车包车、节奏适中）',
+        luxury: '富游模式（高端酒店、专车接送、私人定制）'
+    };
+
+    const systemPrompt = `你是一位专业的中国旅行规划师。根据用户提供的预算、目的地、出发地、天数和玩法，生成详细的旅行规划。
+
+请严格按以下JSON格式输出，不要输出任何其他内容：
+{
+  "budget_breakdown": {
+    "transportation": { "amount": 数字, "detail": "说明" },
+    "accommodation": { "amount": 数字, "detail": "说明" },
+    "food": { "amount": 数字, "detail": "说明" },
+    "tickets": { "amount": 数字, "detail": "说明" },
+    "other": { "amount": 数字, "detail": "说明" }
+  },
+  "transportation": {
+    "to_destination": "往返交通方式和参考价格",
+    "local": "当地交通建议"
+  },
+  "accommodation": {
+    "type": "住宿类型",
+    "area": "推荐住宿区域",
+    "price_range": "每晚价格区间",
+    "recommendations": ["推荐1", "推荐2"]
+  },
+  "daily_schedule": [
+    {
+      "day": 1,
+      "morning": { "activity": "活动", "detail": "详情", "cost": "费用" },
+      "afternoon": { "activity": "活动", "detail": "详情", "cost": "费用" },
+      "evening": { "activity": "活动", "detail": "详情", "cost": "费用" }
+    }
+  ],
+  "food_recommendations": [
+    { "name": "餐厅或小吃", "type": "早餐/午餐/晚餐/小吃", "price": "人均价格", "reason": "推荐理由" }
+  ],
+  "tips": ["注意事项1", "注意事项2"]
+}`;
+
+    const userPrompt = `请为我规划一次旅行：
+- 总预算：${budget}元（${people}人总共）
+- 目的地：${destination}
+- 出发地：${origin}
+- 行程：${days}
+- 玩法：${modeLabels[mode] || mode}
+- 兴趣偏好：${interests && interests.length ? interests.join('、') : '无特别偏好'}
+
+请根据以上信息生成详细的旅行规划，确保总花费不超过预算。`;
+
+    try {
+        const aiResult = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            max_tokens: 2048
+        });
+
+        const text = aiResult.response || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            return json({ error: 'AI 返回格式异常，请重试' }, 500);
+        }
+
+        const planData = JSON.parse(jsonMatch[0]);
+        return json(planData);
+    } catch (e) {
+        return json({ error: '生成规划失败：' + e.message }, 500);
+    }
 }
 

@@ -50,6 +50,8 @@ const API = {
         if (params.season) query.set('season', params.season);
         if (params.search) query.set('search', params.search);
         if (params.sort) query.set('sort', params.sort);
+        if (params.page) query.set('page', params.page);
+        if (params.limit) query.set('limit', params.limit);
         const qs = query.toString();
         return this.request('/posts' + (qs ? '?' + qs : ''));
     },

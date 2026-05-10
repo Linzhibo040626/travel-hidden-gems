@@ -1,3 +1,6 @@
+let currentPage = 1;
+let totalPages = 1;
+
 document.addEventListener('DOMContentLoaded', () => {
     Auth.updateNav();
     loadPosts();
@@ -68,12 +71,16 @@ async function loadPosts() {
         category: document.getElementById('filterCategory')?.value || '',
         region: document.getElementById('filterProvince')?.value || '',
         season: document.getElementById('filterSeason')?.value || '',
-        sort: document.getElementById('filterSort')?.value || ''
+        sort: document.getElementById('filterSort')?.value || '',
+        page: currentPage,
+        limit: 12
     };
 
     try {
-        const posts = await API.getPosts(params);
-        renderPosts(posts);
+        const data = await API.getPosts(params);
+        totalPages = data.totalPages || 1;
+        renderPosts(data.posts || []);
+        renderPagination();
     } catch (err) {
         console.error('Failed to load posts:', err);
         renderPosts([]);
@@ -129,12 +136,64 @@ function renderPosts(posts) {
     `}).join('');
 }
 
+function renderPagination() {
+    let paginationEl = document.getElementById('pagination');
+    if (!paginationEl) {
+        const container = document.querySelector('.container');
+        if (!container) return;
+        paginationEl = document.createElement('div');
+        paginationEl.id = 'pagination';
+        paginationEl.className = 'pagination';
+        container.appendChild(paginationEl);
+    }
+
+    if (totalPages <= 1) {
+        paginationEl.style.display = 'none';
+        return;
+    }
+
+    paginationEl.style.display = 'flex';
+    let html = '';
+
+    html += `<button class="page-btn" ${currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">上一页</button>`;
+
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+    if (start > 1) {
+        html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+        if (start > 2) html += `<span class="page-ellipsis">...</span>`;
+    }
+
+    for (let i = start; i <= end; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+
+    if (end < totalPages) {
+        if (end < totalPages - 1) html += `<span class="page-ellipsis">...</span>`;
+        html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    html += `<button class="page-btn" ${currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">下一页</button>`;
+
+    paginationEl.innerHTML = html;
+}
+
+function goToPage(page) {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    currentPage = page;
+    loadPosts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function setupFilters() {
     const filters = ['filterCategory', 'filterProvince', 'filterSeason', 'filterSort'];
     filters.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('change', loadPosts);
+            el.addEventListener('change', () => { currentPage = 1; loadPosts(); });
         }
     });
 }
@@ -144,6 +203,7 @@ function filterByProvince(name) {
     if (select) {
         select.value = name;
     }
+    currentPage = 1;
     loadPosts();
     switchView('posts');
 }
