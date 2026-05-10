@@ -42,7 +42,6 @@
                     <div class="chat-toolbar">
                         <button class="chat-tool-btn" id="btnEmoji" title="表情">&#128522;</button>
                         <button class="chat-tool-btn" id="btnImage" title="图片">&#128247;</button>
-                        <button class="chat-tool-btn" id="btnVoice" title="语音">&#127908;</button>
                     </div>
                     <div class="chat-input-row">
                         <textarea id="chatInput" rows="1" placeholder="输入消息..."></textarea>
@@ -407,11 +406,6 @@ function setupInputHandlers() {
         document.getElementById('imageInput').click();
     });
     document.getElementById('imageInput').addEventListener('change', handleImageSelect);
-    document.getElementById('btnVoice').addEventListener('mousedown', startRecording);
-    document.getElementById('btnVoice').addEventListener('mouseup', stopRecording);
-    document.getElementById('btnVoice').addEventListener('mouseleave', stopRecording);
-    document.getElementById('btnVoice').addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-    document.getElementById('btnVoice').addEventListener('touchend', stopRecording);
     document.getElementById('btnEmoji').addEventListener('click', toggleEmojiPanel);
 }
 
@@ -453,104 +447,6 @@ async function handleImageSelect(e) {
             showToast(err.message || '上传失败', 'error');
         }
     }
-}
-
-// --- Voice ---
-let mediaRecorder = null;
-let audioChunks = [];
-let recordStartTime = 0;
-let recordTimer = null;
-let voiceOverlay = null;
-
-function startRecording() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') return;
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-        audioChunks = [];
-        recordStartTime = Date.now();
-
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.onstop = handleRecordingStop;
-        mediaRecorder.start();
-
-        showRecordOverlay();
-    }).catch(() => {
-        showToast('无法访问麦克风', 'error');
-    });
-}
-
-function stopRecording() {
-    if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(t => t.stop());
-    hideRecordOverlay();
-}
-
-function showRecordOverlay() {
-    voiceOverlay = document.createElement('div');
-    voiceOverlay.className = 'voice-record-overlay';
-    voiceOverlay.innerHTML = `
-        <div class="record-pulse">&#127908;</div>
-        <div class="record-timer" id="recTimer">0:00</div>
-        <div class="record-hint">松开发送，上滑取消</div>
-        <button class="record-cancel" onclick="cancelRecording()">取消</button>
-    `;
-    document.getElementById('chatActive').appendChild(voiceOverlay);
-    recordTimer = setInterval(() => {
-        const sec = Math.floor((Date.now() - recordStartTime) / 1000);
-        const el = document.getElementById('recTimer');
-        if (el) el.textContent = `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
-    }, 1000);
-}
-
-function hideRecordOverlay() {
-    if (recordTimer) { clearInterval(recordTimer); recordTimer = null; }
-    if (voiceOverlay) { voiceOverlay.remove(); voiceOverlay = null; }
-}
-
-function cancelRecording() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.onstop = null;
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(t => t.stop());
-    }
-    audioChunks = [];
-    hideRecordOverlay();
-}
-
-async function handleRecordingStop() {
-    const duration = Math.round((Date.now() - recordStartTime) / 1000);
-    if (duration < 1 || audioChunks.length === 0) {
-        showToast('录音太短', 'error');
-        return;
-    }
-    if (duration > 60) {
-        showToast('语音最长60秒', 'error');
-        return;
-    }
-
-    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-    appendLocalMessage(String(duration), 'voice', URL.createObjectURL(blob));
-
-    try {
-        const file = new File([blob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
-        const uploaded = await API.uploadFile(file);
-        await API.sendMessage(currentChatUserId, String(duration), 'voice', uploaded.url);
-    } catch (err) {
-        showToast(err.message || '发送失败', 'error');
-    }
-}
-
-// --- Voice playback ---
-let currentAudio = null;
-function playVoice(el, url) {
-    if (!url) return;
-    if (currentAudio) { currentAudio.pause(); document.querySelectorAll('.voice-msg.playing').forEach(e => e.classList.remove('playing')); }
-    el.classList.add('playing');
-    currentAudio = new Audio(url);
-    currentAudio.play();
-    currentAudio.onended = () => { el.classList.remove('playing'); currentAudio = null; };
-    currentAudio.onerror = () => { el.classList.remove('playing'); currentAudio = null; showToast('播放失败', 'error'); };
 }
 
 // --- Emoji ---

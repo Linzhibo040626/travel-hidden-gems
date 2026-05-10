@@ -1801,6 +1801,10 @@ a:hover {
         display: none;
     }
 
+    .nav-actions {
+        margin-right: 44px;
+    }
+
     .nav-logo-img {
         height: 30px;
     }
@@ -2227,41 +2231,6 @@ a:hover {
     cursor: pointer;
     display: block;
 }
-.chat-bubble .voice-msg {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    min-width: 80px;
-}
-.chat-bubble .voice-msg .voice-icon {
-    font-size: 18px;
-}
-.chat-bubble .voice-msg .voice-duration {
-    font-size: 13px;
-}
-.chat-bubble .voice-msg .voice-waves {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    height: 16px;
-}
-.chat-bubble .voice-msg .voice-waves span {
-    width: 3px;
-    background: currentColor;
-    border-radius: 2px;
-    opacity: 0.5;
-}
-.chat-bubble .voice-msg.playing .voice-waves span {
-    animation: voiceWave 0.6s ease-in-out infinite alternate;
-}
-@keyframes voiceWave {
-    from { height: 4px; }
-    to { height: 14px; }
-}
-.chat-bubble .voice-msg .voice-waves span:nth-child(2) { animation-delay: 0.1s; }
-.chat-bubble .voice-msg .voice-waves span:nth-child(3) { animation-delay: 0.2s; }
-.chat-bubble .voice-msg .voice-waves span:nth-child(4) { animation-delay: 0.3s; }
 
 /* Chat input area */
 .chat-input-area {
@@ -2379,54 +2348,6 @@ a:hover {
 }
 .emoji-item:hover {
     background: var(--bg-elevated);
-}
-
-/* Voice recording overlay */
-.voice-record-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    gap: 16px;
-}
-.voice-record-overlay .record-pulse {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #e74c3c;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    color: #fff;
-    animation: recordPulse 1.2s ease-in-out infinite;
-}
-@keyframes recordPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
-    50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(231,76,60,0); }
-}
-.voice-record-overlay .record-timer {
-    color: #fff;
-    font-size: 24px;
-    font-weight: 500;
-}
-.voice-record-overlay .record-hint {
-    color: rgba(255,255,255,0.7);
-    font-size: 14px;
-}
-.voice-record-overlay .record-cancel {
-    margin-top: 16px;
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: #fff;
-    padding: 8px 24px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
 }
 
 /* Image preview lightbox */
