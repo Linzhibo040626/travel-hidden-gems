@@ -12,283 +12,598 @@
             <img src="logo.svg" alt="别处游" class="nav-logo-img">
             <span class="nav-logo-text">别处游</span>
         </a>
-        <div class="nav-search">
-            <input type="text" placeholder="搜索目的地、攻略...">
+        <div class="nav-actions" id="navActions">
+            <a href="login.html" class="btn btn-outline">登录</a>
+            <a href="register.html" class="btn btn-primary">注册</a>
         </div>
-        <div class="nav-actions" id="navActions"></div>
     </nav>
 
-    <div class="chat-page">
-        <div class="chat-sidebar" id="chatSidebar">
+    <div class="chat-page" id="chatPage">
+        <div class="chat-sidebar">
             <div class="chat-sidebar-header">
-                <h3>消息</h3>
+                <h3>私信</h3>
             </div>
             <div class="chat-list" id="chatList">
-                <div class="empty-state" id="emptyChats">
-                    <p>暂无消息</p>
-                </div>
+                <div style="padding:40px;text-align:center;color:var(--text-muted);">加载中...</div>
             </div>
         </div>
-        <div class="chat-window" id="chatWindow">
+
+        <div class="chat-window">
             <div class="chat-window-placeholder" id="chatPlaceholder">
-                <p>选择一个会话开始聊天</p>
+                <p>选择一个对话开始聊天</p>
             </div>
             <div class="chat-window-active" id="chatActive" style="display:none;">
                 <div class="chat-window-header">
-                    <button class="chat-back-btn" id="chatBackBtn" onclick="showChatList()">&#8592;</button>
-                    <span id="chatTargetName"></span>
+                    <button class="chat-back-btn" onclick="closeChat()">&#8592;</button>
+                    <span id="chatPartnerName"></span>
                 </div>
                 <div class="chat-messages" id="chatMessages"></div>
                 <div class="chat-input-area">
-                    <button class="chat-tool-btn" id="emojiBtn" onclick="toggleEmojiPanel()">&#128522;</button>
-                    <button class="chat-tool-btn" onclick="document.getElementById('chatImageFile').click()">&#128247;</button>
-                    <input type="file" id="chatImageFile" accept="image/*" style="display:none" onchange="handleChatImage(event)">
-                    <input type="text" id="chatInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()">
-                    <button class="btn btn-primary" onclick="sendMsg()">发送</button>
+                    <div class="chat-toolbar">
+                        <button class="chat-tool-btn" id="btnEmoji" title="表情">&#128522;</button>
+                        <button class="chat-tool-btn" id="btnImage" title="图片">&#128247;</button>
+                        <button class="chat-tool-btn" id="btnVoice" title="语音">&#127908;</button>
+                    </div>
+                    <div class="chat-input-row">
+                        <textarea id="chatInput" rows="1" placeholder="输入消息..."></textarea>
+                        <button class="chat-send-btn" id="btnSend" onclick="sendTextMessage()">发送</button>
+                    </div>
                 </div>
-                <div class="emoji-panel" id="emojiPanel" style="display:none;"></div>
+                <div class="emoji-panel" id="emojiPanel">
+                    <div class="emoji-tabs" id="emojiTabs"></div>
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <input type="file" id="imageInput" accept="image/*" style="display:none;">
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
-    <script>
-        if (!Auth.isLoggedIn()) {
-            showToast('请先登录', 'error');
-            setTimeout(() => window.location.href = 'login.html', 1000);
+<script>
+let currentChatUserId = null;
+let currentChatUser = null;
+let oldestMsgId = null;
+let newestMsgId = null;
+let hasMore = false;
+let pollTimer = null;
+let listPollTimer = null;
+let myUserId = null;
+
+const EMOJIS = {
+    '常用': ['😀','😂','🤣','😊','😍','🥰','😘','😜','🤗','😎','🥺','😢','😭','😤','🤔','👍','👎','❤️','🔥','🎉','👏','🙏','💪','✨','🌟'],
+    '表情': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐'],
+    '手势': ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','💪','🦾'],
+    '动物': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦅','🦆','🦉','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟'],
+    '自然': ['🌸','💐','🌷','🌹','🥀','🌺','🌻','🌼','🌱','🌲','🌳','🌴','🌵','🍀','🍁','🍂','🍃','🌍','🌙','⭐','🌈','☀️','⛅','🌊','❄️','🔥','💧','🌺'],
+    '旅行': ['✈️','🚗','🚌','🚂','🚢','🏖️','🏔️','🗻','🏕️','🌋','🗼','🏰','🎡','🎢','🗽','🌉','⛩️','🕌','🛕','🏯','🗿','🧳','🎒','🗺️','🧭','⛺','🏝️','🌄','🌅','🎑']
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    Auth.updateNav();
+    if (!Auth.isLoggedIn()) {
+        window.location.href = 'login.html';
+        return;
+    }
+    const token = localStorage.getItem('token');
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            myUserId = payload.userId || payload.id;
+        } catch {}
+    }
+    loadConversations();
+    startListPolling();
+    setupEmojiPanel();
+    setupInputHandlers();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUser = urlParams.get('user');
+    if (targetUser) {
+        openChatById(parseInt(targetUser));
+    }
+});
+
+async function loadConversations() {
+    try {
+        const convos = await API.getConversations();
+        renderConversations(convos);
+    } catch (err) {
+        document.getElementById('chatList').innerHTML =
+            '<div style="padding:40px;text-align:center;color:var(--text-muted);">加载失败</div>';
+    }
+}
+
+function renderConversations(convos) {
+    const list = document.getElementById('chatList');
+    if (!convos || convos.length === 0) {
+        list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">暂无对话<br><a href="friends.html" style="color:var(--primary);">去找好友聊天</a></div>';
+        return;
+    }
+    list.innerHTML = convos.map(c => {
+        let preview = c.last_message || '';
+        if (c.last_msg_type === 'image') preview = '[图片]';
+        else if (c.last_msg_type === 'voice') preview = '[语音]';
+        if (preview.length > 20) preview = preview.slice(0, 20) + '...';
+        const avatar = c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nickname || c.username)}&background=1B5E6B&color=fff`;
+        return `<div class="chat-item ${c.user_id === currentChatUserId ? 'active' : ''}" onclick="openChat(${c.user_id}, '${escapeHtml(c.nickname || c.username)}', '${escapeHtml(avatar)}')">
+            <img class="chat-item-avatar" src="${escapeHtml(avatar)}" alt="">
+            <div class="chat-item-info">
+                <div class="chat-item-top">
+                    <span class="chat-item-name">${escapeHtml(c.nickname || c.username)}</span>
+                    <span class="chat-item-time">${formatTime(c.last_time)}</span>
+                </div>
+                <div class="chat-item-preview">${escapeHtml(preview)}</div>
+            </div>
+            ${c.unread_count > 0 ? `<span class="badge">${c.unread_count}</span>` : ''}
+        </div>`;
+    }).join('');
+}
+
+async function openChat(userId, name, avatar) {
+    currentChatUserId = userId;
+    currentChatUser = { id: userId, name, avatar };
+    oldestMsgId = null;
+    newestMsgId = null;
+    hasMore = false;
+
+    document.getElementById('chatPlaceholder').style.display = 'none';
+    document.getElementById('chatActive').style.display = 'flex';
+    document.getElementById('chatPartnerName').textContent = name;
+    document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('chatPage').classList.add('chat-open');
+
+    document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+    event?.target?.closest?.('.chat-item')?.classList.add('active');
+
+    await loadMessages();
+    API.markRead(userId);
+    startChatPolling();
+}
+
+async function openChatById(userId) {
+    try {
+        const convos = await API.getConversations();
+        const c = convos.find(x => x.user_id === userId);
+        if (c) {
+            const avatar = c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nickname || c.username)}&background=1B5E6B&color=fff`;
+            openChat(userId, c.nickname || c.username, avatar);
+        } else {
+            openChat(userId, '用户' + userId, '');
         }
-        Auth.updateNav();
+    } catch {
+        openChat(userId, '用户' + userId, '');
+    }
+}
 
-        let currentChatUser = null;
-        let pollTimer = null;
-        let cachedFriends = null;
-        let lastMsgId = 0;
-        let lastConvoHash = '';
-        let polling = false;
-        const currentUser = Auth.getUser();
+function closeChat() {
+    document.getElementById('chatPage').classList.remove('chat-open');
+    currentChatUserId = null;
+    stopChatPolling();
+}
 
-        const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','✈️','🏔️','🌊','🌸','🍜','☀️','🌙','⭐','🎵','📷','🗺️'];
+async function loadMessages(direction = 'initial') {
+    if (!currentChatUserId) return;
+    const container = document.getElementById('chatMessages');
+    let params = { limit: 30 };
 
-        function defaultAvatar(username) {
-            const ch = username ? username[0].toUpperCase() : 'U';
-            return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23E8F6F8" width="100" height="100"/><text x="50" y="65" font-size="40" text-anchor="middle" fill="%231B5E6B">' + ch + '</text></svg>';
+    if (direction === 'older' && oldestMsgId) {
+        params.before = oldestMsgId;
+    } else if (direction === 'newer' && newestMsgId) {
+        params.after = newestMsgId;
+    }
+
+    try {
+        const data = await API.getMessages(currentChatUserId, params);
+        const messages = data.messages || [];
+        hasMore = data.has_more;
+
+        if (direction === 'initial') {
+            renderMessages(messages, 'replace');
+            scrollToBottom();
+        } else if (direction === 'older') {
+            renderMessages(messages, 'prepend');
+        } else if (direction === 'newer') {
+            renderMessages(messages, 'append');
+            scrollToBottom();
         }
 
-        function initEmojiPanel() {
-            const panel = document.getElementById('emojiPanel');
-            panel.innerHTML = EMOJIS.map(e => `<span class="emoji-item" onclick="insertEmoji('${e}')">${e}</span>`).join('');
+        if (messages.length > 0) {
+            if (direction !== 'newer') oldestMsgId = messages[0].id;
+            if (direction !== 'older') newestMsgId = messages[messages.length - 1].id;
+            if (direction === 'initial') oldestMsgId = messages[0].id;
         }
+    } catch (err) {
+        console.error('Load messages failed:', err);
+    }
+}
 
-        function toggleEmojiPanel() {
-            const panel = document.getElementById('emojiPanel');
-            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+function renderMessages(messages, mode) {
+    const container = document.getElementById('chatMessages');
+
+    if (mode === 'replace') {
+        let html = '';
+        if (hasMore) {
+            html += '<div class="chat-load-more"><button onclick="loadOlder()">加载更多</button></div>';
         }
-
-        function insertEmoji(emoji) {
-            const input = document.getElementById('chatInput');
-            input.value += emoji;
-            input.focus();
+        let lastTime = null;
+        messages.forEach(msg => {
+            const divider = getTimeDivider(msg.created_at, lastTime);
+            if (divider) html += divider;
+            lastTime = msg.created_at;
+            html += renderSingleMessage(msg);
+        });
+        container.innerHTML = html;
+    } else if (mode === 'prepend') {
+        const prevHeight = container.scrollHeight;
+        let html = '';
+        if (hasMore) {
+            html += '<div class="chat-load-more"><button onclick="loadOlder()">加载更多</button></div>';
         }
+        let lastTime = null;
+        messages.forEach(msg => {
+            const divider = getTimeDivider(msg.created_at, lastTime);
+            if (divider) html += divider;
+            lastTime = msg.created_at;
+            html += renderSingleMessage(msg);
+        });
+        const existingLoadMore = container.querySelector('.chat-load-more');
+        if (existingLoadMore) existingLoadMore.remove();
+        container.insertAdjacentHTML('afterbegin', html);
+        container.scrollTop = container.scrollHeight - prevHeight;
+    } else if (mode === 'append') {
+        let html = '';
+        let lastTime = null;
+        const lastExisting = container.querySelector('.chat-msg:last-child');
+        if (lastExisting) lastTime = lastExisting.dataset.time;
+        messages.forEach(msg => {
+            const divider = getTimeDivider(msg.created_at, lastTime);
+            if (divider) html += divider;
+            lastTime = msg.created_at;
+            html += renderSingleMessage(msg);
+        });
+        container.insertAdjacentHTML('beforeend', html);
+    }
+}
 
-        function handleChatImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('图片不能超过2MB', 'error');
-                event.target.value = '';
-                return;
+function renderSingleMessage(msg) {
+    const isMine = msg.sender_id === myUserId;
+    const side = isMine ? 'mine' : 'theirs';
+    const avatar = isMine ? '' : (currentChatUser?.avatar || '');
+    const msgType = msg.msg_type || 'text';
+    let bubbleContent = '';
+
+    if (msgType === 'image') {
+        const imgUrl = msg.file_url || msg.content;
+        bubbleContent = `<img class="chat-img" src="${escapeHtml(imgUrl)}" onclick="showLightbox(this.src)" alt="图片">`;
+    } else if (msgType === 'voice') {
+        const duration = parseInt(msg.content) || 0;
+        const fileUrl = msg.file_url || '';
+        bubbleContent = `<div class="voice-msg" onclick="playVoice(this, '${escapeHtml(fileUrl)}')">
+            <span class="voice-icon">&#127911;</span>
+            <span class="voice-duration">${duration}"</span>
+            <div class="voice-waves"><span style="height:6px"></span><span style="height:10px"></span><span style="height:8px"></span><span style="height:12px"></span></div>
+        </div>`;
+    } else {
+        let content = msg.content || '';
+        if (content.match(/^\[img\](.*?)\[\/img\]$/)) {
+            const imgUrl = content.match(/^\[img\](.*?)\[\/img\]$/)[1];
+            bubbleContent = `<img class="chat-img" src="${escapeHtml(imgUrl)}" onclick="showLightbox(this.src)" alt="图片">`;
+        } else {
+            bubbleContent = escapeHtml(content);
+        }
+    }
+
+    const avatarHtml = !isMine && avatar ? `<img class="chat-msg-avatar" src="${escapeHtml(avatar)}" alt="">` : (!isMine ? '<div class="chat-msg-avatar"></div>' : '');
+
+    return `<div class="chat-msg ${side}" data-time="${msg.created_at}" data-id="${msg.id}">
+        ${avatarHtml}
+        <div class="chat-bubble">${bubbleContent}</div>
+    </div>`;
+}
+
+function getTimeDivider(currentTime, lastTime) {
+    if (!lastTime) return `<div class="chat-time-divider">${formatChatTime(currentTime)}</div>`;
+    const diff = new Date(currentTime) - new Date(lastTime);
+    if (diff > 5 * 60 * 1000) {
+        return `<div class="chat-time-divider">${formatChatTime(currentTime)}</div>`;
+    }
+    return '';
+}
+
+function formatChatTime(timeStr) {
+    if (!timeStr) return '';
+    const d = new Date(timeStr + (timeStr.includes('Z') ? '' : 'Z'));
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.floor((today - msgDay) / 86400000);
+    const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    if (diffDays === 0) return time;
+    if (diffDays === 1) return `昨天 ${time}`;
+    if (diffDays < 7) return `${['日','一','二','三','四','五','六'][d.getDay()]} ${time}`;
+    return `${d.getMonth()+1}/${d.getDate()} ${time}`;
+}
+
+function loadOlder() {
+    loadMessages('older');
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('chatMessages');
+    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+}
+
+// --- Polling ---
+function startChatPolling() {
+    stopChatPolling();
+    pollTimer = setInterval(async () => {
+        if (!currentChatUserId) return;
+        try {
+            const data = await API.getMessages(currentChatUserId, { after: newestMsgId, limit: 30 });
+            const messages = data.messages || [];
+            if (messages.length > 0) {
+                renderMessages(messages, 'append');
+                newestMsgId = messages[messages.length - 1].id;
+                scrollToBottom();
+                API.markRead(currentChatUserId);
             }
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                if (!currentChatUser) return;
-                try {
-                    await API.sendMessage(currentChatUser, '[img]' + e.target.result + '[/img]');
-                    appendMyMessage('[img]' + e.target.result + '[/img]');
-                } catch (err) {
-                    showToast(err.message, 'error');
-                }
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
+        } catch {}
+    }, 5000);
+}
 
-        function renderMessageContent(content) {
-            const imgMatch = content.match(/^\[img\](.*)\[\/img\]$/);
-            if (imgMatch) {
-                return `<img class="chat-img" src="${imgMatch[1]}" alt="图片" onclick="window.open(this.src)">`;
-            }
-            return escapeHtml(content);
-        }
+function stopChatPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
 
-        function appendMyMessage(content) {
-            const container = document.getElementById('chatMessages');
-            const div = document.createElement('div');
-            div.className = 'chat-bubble mine';
-            div.innerHTML = `<p>${renderMessageContent(content)}</p><span class="bubble-time">刚刚</span>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
+function startListPolling() {
+    listPollTimer = setInterval(() => { loadConversations(); }, 15000);
+}
 
-        async function loadConversations() {
+// --- Send text ---
+async function sendTextMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || !currentChatUserId) return;
+
+    input.value = '';
+    autoResizeInput();
+    appendLocalMessage(text, 'text');
+
+    try {
+        await API.sendMessage(currentChatUserId, text, 'text');
+    } catch (err) {
+        showToast(err.message || '发送失败', 'error');
+    }
+}
+
+function appendLocalMessage(content, msgType, fileUrl) {
+    const msg = {
+        id: Date.now(),
+        sender_id: myUserId,
+        content: content,
+        msg_type: msgType,
+        file_url: fileUrl || '',
+        created_at: new Date().toISOString()
+    };
+    newestMsgId = msg.id;
+    renderMessages([msg], 'append');
+    scrollToBottom();
+}
+
+// --- Image ---
+function setupInputHandlers() {
+    const input = document.getElementById('chatInput');
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendTextMessage();
+        }
+    });
+    input.addEventListener('input', autoResizeInput);
+
+    document.getElementById('btnImage').addEventListener('click', () => {
+        document.getElementById('imageInput').click();
+    });
+    document.getElementById('imageInput').addEventListener('change', handleImageSelect);
+    document.getElementById('btnVoice').addEventListener('mousedown', startRecording);
+    document.getElementById('btnVoice').addEventListener('mouseup', stopRecording);
+    document.getElementById('btnVoice').addEventListener('mouseleave', stopRecording);
+    document.getElementById('btnVoice').addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+    document.getElementById('btnVoice').addEventListener('touchend', stopRecording);
+    document.getElementById('btnEmoji').addEventListener('click', toggleEmojiPanel);
+}
+
+function autoResizeInput() {
+    const input = document.getElementById('chatInput');
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+}
+
+async function handleImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('图片不能超过10MB', 'error');
+        return;
+    }
+
+    if (file.size < 200 * 1024) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const dataUrl = reader.result;
+            appendLocalMessage(dataUrl, 'image', dataUrl);
             try {
-                if (!cachedFriends) {
-                    cachedFriends = await API.getFriends();
-                }
-                const convos = await API.getConversations();
-
-                const hash = JSON.stringify(convos.map(c => c.user_id + ':' + c.unread_count + ':' + (c.last_message || '').slice(0, 20)));
-                if (hash === lastConvoHash) return;
-                lastConvoHash = hash;
-
-                const list = document.getElementById('chatList');
-                const empty = document.getElementById('emptyChats');
-
-                const convoMap = {};
-                convos.forEach(c => { convoMap[c.user_id] = c; });
-
-                const allItems = cachedFriends.map(f => {
-                    const c = convoMap[f.id];
-                    return {
-                        user_id: f.id,
-                        username: f.username,
-                        nickname: f.nickname,
-                        avatar: f.avatar,
-                        last_message: c ? c.last_message : '',
-                        last_time: c ? c.last_time : f.friend_since,
-                        unread_count: c ? c.unread_count : 0,
-                        has_message: !!c
-                    };
-                });
-
-                allItems.sort((a, b) => {
-                    if (a.has_message && !b.has_message) return -1;
-                    if (!a.has_message && b.has_message) return 1;
-                    return new Date(b.last_time) - new Date(a.last_time);
-                });
-
-                if (allItems.length === 0) {
-                    empty.style.display = 'block';
-                    return;
-                }
-                empty.style.display = 'none';
-                list.innerHTML = allItems.map(c => `
-                    <div class="chat-item ${currentChatUser == c.user_id ? 'active' : ''}" onclick="openChat(${c.user_id}, '${escapeHtml(c.nickname || c.username)}')">
-                        <img class="chat-item-avatar" src="${c.avatar || defaultAvatar(c.username)}" alt="">
-                        <div class="chat-item-info">
-                            <div class="chat-item-top">
-                                <span class="chat-item-name">${escapeHtml(c.nickname || c.username)}</span>
-                                <span class="chat-item-time">${c.last_message ? formatTime(c.last_time) : ''}</span>
-                            </div>
-                            <p class="chat-item-preview">${c.last_message ? (c.last_message.startsWith('[img]') ? '[图片]' : escapeHtml(c.last_message)) : '暂无消息'}</p>
-                        </div>
-                        ${c.unread_count > 0 ? `<span class="badge">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
-                    </div>
-                `).join('');
+                await API.sendMessage(currentChatUserId, dataUrl, 'image', dataUrl);
             } catch (err) {
-                console.error(err);
+                showToast('发送失败', 'error');
             }
+        };
+        reader.readAsDataURL(file);
+    } else {
+        const tempUrl = URL.createObjectURL(file);
+        appendLocalMessage('', 'image', tempUrl);
+        try {
+            const uploaded = await API.uploadFile(file);
+            await API.sendMessage(currentChatUserId, '', 'image', uploaded.url);
+        } catch (err) {
+            showToast(err.message || '上传失败', 'error');
         }
+    }
+}
 
-        async function openChat(userId, name) {
-            currentChatUser = userId;
-            lastMsgId = 0;
-            document.getElementById('chatPlaceholder').style.display = 'none';
-            document.getElementById('chatActive').style.display = 'flex';
-            document.getElementById('chatTargetName').textContent = name;
-            document.getElementById('chatMessages').innerHTML = '';
-            document.querySelector('.chat-page').classList.add('chat-open');
-            await loadMessages();
-            API.markRead(userId);
-            lastConvoHash = '';
-        }
+// --- Voice ---
+let mediaRecorder = null;
+let audioChunks = [];
+let recordStartTime = 0;
+let recordTimer = null;
+let voiceOverlay = null;
 
-        function showChatList() {
-            document.querySelector('.chat-page').classList.remove('chat-open');
-            currentChatUser = null;
-            lastMsgId = 0;
-            lastConvoHash = '';
-            loadConversations();
-        }
+function startRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        audioChunks = [];
+        recordStartTime = Date.now();
 
-        async function loadMessages() {
-            if (!currentChatUser) return;
-            try {
-                const messages = await API.getMessages(currentChatUser);
-                if (!messages.length) return;
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.onstop = handleRecordingStop;
+        mediaRecorder.start();
 
-                const newLastId = messages[messages.length - 1].id;
-                if (newLastId === lastMsgId) return;
+        showRecordOverlay();
+    }).catch(() => {
+        showToast('无法访问麦克风', 'error');
+    });
+}
 
-                const container = document.getElementById('chatMessages');
+function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    hideRecordOverlay();
+}
 
-                if (lastMsgId === 0) {
-                    container.innerHTML = messages.map(m => `
-                        <div class="chat-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}" data-id="${m.id}">
-                            <p>${renderMessageContent(m.content)}</p>
-                            <span class="bubble-time">${formatTime(m.created_at)}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    const newMsgs = messages.filter(m => m.id > lastMsgId);
-                    const fragment = document.createDocumentFragment();
-                    newMsgs.forEach(m => {
-                        const div = document.createElement('div');
-                        div.className = 'chat-bubble ' + (m.sender_id === currentUser.id ? 'mine' : 'theirs');
-                        div.dataset.id = m.id;
-                        div.innerHTML = `<p>${renderMessageContent(m.content)}</p><span class="bubble-time">${formatTime(m.created_at)}</span>`;
-                        fragment.appendChild(div);
-                    });
-                    container.appendChild(fragment);
-                    if (newMsgs.some(m => m.sender_id !== currentUser.id)) {
-                        API.markRead(currentChatUser);
-                    }
-                }
+function showRecordOverlay() {
+    voiceOverlay = document.createElement('div');
+    voiceOverlay.className = 'voice-record-overlay';
+    voiceOverlay.innerHTML = `
+        <div class="record-pulse">&#127908;</div>
+        <div class="record-timer" id="recTimer">0:00</div>
+        <div class="record-hint">松开发送，上滑取消</div>
+        <button class="record-cancel" onclick="cancelRecording()">取消</button>
+    `;
+    document.getElementById('chatActive').appendChild(voiceOverlay);
+    recordTimer = setInterval(() => {
+        const sec = Math.floor((Date.now() - recordStartTime) / 1000);
+        const el = document.getElementById('recTimer');
+        if (el) el.textContent = `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
+    }, 1000);
+}
 
-                lastMsgId = newLastId;
-                container.scrollTop = container.scrollHeight;
-            } catch (err) {
-                console.error(err);
-            }
-        }
+function hideRecordOverlay() {
+    if (recordTimer) { clearInterval(recordTimer); recordTimer = null; }
+    if (voiceOverlay) { voiceOverlay.remove(); voiceOverlay = null; }
+}
 
-        async function sendMsg() {
-            const input = document.getElementById('chatInput');
-            const content = input.value.trim();
-            if (!content || !currentChatUser) return;
-            input.value = '';
-            document.getElementById('emojiPanel').style.display = 'none';
-            try {
-                await API.sendMessage(currentChatUser, content);
-                appendMyMessage(content);
-            } catch (err) {
-                showToast(err.message, 'error');
-            }
-        }
+function cancelRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.onstop = null;
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    audioChunks = [];
+    hideRecordOverlay();
+}
 
-        function startPolling() {
-            pollTimer = setInterval(() => {
-                if (document.hidden) return;
-                if (polling) return;
-                polling = true;
-                const p = currentChatUser ? loadMessages() : loadConversations();
-                p.finally(() => { polling = false; });
-            }, 10000);
-        }
+async function handleRecordingStop() {
+    const duration = Math.round((Date.now() - recordStartTime) / 1000);
+    if (duration < 1 || audioChunks.length === 0) {
+        showToast('录音太短', 'error');
+        return;
+    }
+    if (duration > 60) {
+        showToast('语音最长60秒', 'error');
+        return;
+    }
 
-        const params = new URLSearchParams(window.location.search);
-        const targetUser = params.get('user');
-        if (targetUser) {
-            (async () => {
-                if (!cachedFriends) cachedFriends = await API.getFriends();
-                const friend = cachedFriends.find(f => f.id == targetUser);
-                if (friend) openChat(friend.id, friend.nickname || friend.username);
-            })();
-        }
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    appendLocalMessage(String(duration), 'voice', URL.createObjectURL(blob));
 
-        loadConversations();
-        startPolling();
-        initEmojiPanel();
-    </script>
+    try {
+        const file = new File([blob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+        const uploaded = await API.uploadFile(file);
+        await API.sendMessage(currentChatUserId, String(duration), 'voice', uploaded.url);
+    } catch (err) {
+        showToast(err.message || '发送失败', 'error');
+    }
+}
+
+// --- Voice playback ---
+let currentAudio = null;
+function playVoice(el, url) {
+    if (!url) return;
+    if (currentAudio) { currentAudio.pause(); document.querySelectorAll('.voice-msg.playing').forEach(e => e.classList.remove('playing')); }
+    el.classList.add('playing');
+    currentAudio = new Audio(url);
+    currentAudio.play();
+    currentAudio.onended = () => { el.classList.remove('playing'); currentAudio = null; };
+    currentAudio.onerror = () => { el.classList.remove('playing'); currentAudio = null; showToast('播放失败', 'error'); };
+}
+
+// --- Emoji ---
+function setupEmojiPanel() {
+    const tabs = document.getElementById('emojiTabs');
+    const grid = document.getElementById('emojiGrid');
+    const categories = Object.keys(EMOJIS);
+
+    tabs.innerHTML = categories.map((cat, i) =>
+        `<div class="emoji-tab ${i === 0 ? 'active' : ''}" onclick="switchEmojiTab(this, '${cat}')">${cat}</div>`
+    ).join('');
+
+    renderEmojiGrid(categories[0]);
+}
+
+function switchEmojiTab(el, category) {
+    document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderEmojiGrid(category);
+}
+
+function renderEmojiGrid(category) {
+    const grid = document.getElementById('emojiGrid');
+    grid.innerHTML = EMOJIS[category].map(e =>
+        `<div class="emoji-item" onclick="insertEmoji('${e}')">${e}</div>`
+    ).join('');
+}
+
+function toggleEmojiPanel() {
+    const panel = document.getElementById('emojiPanel');
+    const btn = document.getElementById('btnEmoji');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active');
+}
+
+function insertEmoji(emoji) {
+    const input = document.getElementById('chatInput');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+    input.selectionStart = input.selectionEnd = start + emoji.length;
+    input.focus();
+    autoResizeInput();
+}
+
+// --- Lightbox ---
+function showLightbox(src) {
+    const lb = document.createElement('div');
+    lb.className = 'chat-lightbox';
+    lb.innerHTML = `<img src="${src}">`;
+    lb.onclick = () => lb.remove();
+    document.body.appendChild(lb);
+}
+</script>
 </body>
 </html>

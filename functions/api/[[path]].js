@@ -94,6 +94,8 @@ async function runMigrations(env) {
         env.DB.prepare("ALTER TABLE posts ADD COLUMN favorites_count INTEGER DEFAULT 0"),
         env.DB.prepare("ALTER TABLE posts ADD COLUMN comments_count INTEGER DEFAULT 0"),
         env.DB.prepare("ALTER TABLE comments ADD COLUMN reply_to INTEGER DEFAULT NULL"),
+        env.DB.prepare("ALTER TABLE messages ADD COLUMN msg_type TEXT DEFAULT 'text'"),
+        env.DB.prepare("ALTER TABLE messages ADD COLUMN file_url TEXT DEFAULT ''"),
     ];
     for (const s of stmts) { try { await s.run(); } catch {} }
     await env.DB.batch([
@@ -196,6 +198,17 @@ export async function onRequest(context) {
         }
         if (path === '/api/users/search' && request.method === 'GET') {
             return await handleSearchUsers(request, env);
+        }
+
+        // Upload route
+        if (path === '/api/upload' && request.method === 'POST') {
+            return await handleUpload(request, env);
+        }
+
+        // R2 files proxy
+        const filesMatch = path.match(/^\/api\/files\/(.+)$/);
+        if (filesMatch && request.method === 'GET') {
+            return await handleGetFile(filesMatch[1], env);
         }
 
         // Messages routes
@@ -741,6 +754,58 @@ async function handleFriendRespond(request, env) {
     return json({ message: action === 'accept' ? '已添加好友' : '已拒绝申请' });
 }
 
+// --- Upload & Files Handlers ---
+
+async function handleUpload(request, env) {
+    const user = await getUser(request, env);
+    if (!user) return json({ error: '请先登录' }, 401);
+
+    if (!env.BUCKET) return json({ error: '文件存储未配置' }, 503);
+
+    const contentType = request.headers.get('content-type') || '';
+    if (!contentType.includes('multipart/form-data')) {
+        return json({ error: '请使用 multipart/form-data' }, 400);
+    }
+
+    const formData = await request.formData();
+    const file = formData.get('file');
+    if (!file || !file.size) return json({ error: '未选择文件' }, 400);
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/webm', 'audio/ogg', 'audio/mp4'];
+    if (!allowedTypes.includes(file.type)) {
+        return json({ error: '不支持的文件类型' }, 400);
+    }
+
+    const maxSize = file.type.startsWith('audio/') ? 2 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        return json({ error: `文件过大，最大${maxSize / 1024 / 1024}MB` }, 400);
+    }
+
+    const ext = file.name.split('.').pop() || (file.type.startsWith('audio/') ? 'webm' : 'jpg');
+    const rand = Math.random().toString(36).slice(2, 10);
+    const key = `chat/${user.id}/${Date.now()}-${rand}.${ext}`;
+
+    await env.BUCKET.put(key, file.stream(), {
+        httpMetadata: { contentType: file.type }
+    });
+
+    return json({ url: `/api/files/${key}` });
+}
+
+async function handleGetFile(key, env) {
+    if (!env.BUCKET) return json({ error: '文件存储未配置' }, 503);
+
+    const object = await env.BUCKET.get(key);
+    if (!object) return json({ error: '文件不存在' }, 404);
+
+    const headers = new Headers();
+    headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
+    headers.set('Cache-Control', 'public, max-age=86400');
+    headers.set('Access-Control-Allow-Origin', '*');
+
+    return new Response(object.body, { headers });
+}
+
 // --- Messages Handlers ---
 
 async function handleGetConversations(request, env) {
@@ -750,7 +815,7 @@ async function handleGetConversations(request, env) {
     const result = await env.DB.prepare(`
         SELECT
             u.id as user_id, u.username, u.nickname, u.avatar,
-            m.content as last_message, m.created_at as last_time,
+            m.content as last_message, m.msg_type as last_msg_type, m.created_at as last_time,
             (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
         FROM users u
         INNER JOIN (
@@ -772,22 +837,70 @@ async function handleGetMessages(userId, request, env) {
     const user = await getUser(request, env);
     if (!user) return json({ error: '请先登录' }, 401);
 
-    const result = await env.DB.prepare(`
-        SELECT id, sender_id, receiver_id, content, is_read, created_at
-        FROM messages
-        WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-        ORDER BY created_at ASC LIMIT 100
-    `).bind(user.id, parseInt(userId), parseInt(userId), user.id).all();
+    const url = new URL(request.url);
+    const before = url.searchParams.get('before');
+    const after = url.searchParams.get('after');
+    const limit = Math.min(parseInt(url.searchParams.get('limit')) || 30, 50);
+    const targetId = parseInt(userId);
 
-    return json(result.results || []);
+    let query, bindings;
+
+    if (after) {
+        query = `SELECT id, sender_id, receiver_id, content, msg_type, file_url, is_read, created_at
+            FROM messages
+            WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+            AND id > ?
+            ORDER BY id ASC LIMIT ?`;
+        bindings = [user.id, targetId, targetId, user.id, parseInt(after), limit];
+    } else if (before) {
+        query = `SELECT * FROM (
+            SELECT id, sender_id, receiver_id, content, msg_type, file_url, is_read, created_at
+            FROM messages
+            WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+            AND id < ?
+            ORDER BY id DESC LIMIT ?
+        ) sub ORDER BY id ASC`;
+        bindings = [user.id, targetId, targetId, user.id, parseInt(before), limit];
+    } else {
+        query = `SELECT * FROM (
+            SELECT id, sender_id, receiver_id, content, msg_type, file_url, is_read, created_at
+            FROM messages
+            WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+            ORDER BY id DESC LIMIT ?
+        ) sub ORDER BY id ASC`;
+        bindings = [user.id, targetId, targetId, user.id, limit];
+    }
+
+    const result = await env.DB.prepare(query).bind(...bindings).all();
+    const messages = result.results || [];
+
+    let has_more = false;
+    if (messages.length > 0) {
+        const oldest = messages[0].id;
+        const older = await env.DB.prepare(
+            `SELECT COUNT(*) as cnt FROM messages
+             WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+             AND id < ?`
+        ).bind(user.id, targetId, targetId, user.id, oldest).first();
+        has_more = (older?.cnt || 0) > 0;
+    }
+
+    return json({ messages, has_more });
 }
 
 async function handleSendMessage(userId, request, env) {
     const user = await getUser(request, env);
     if (!user) return json({ error: '请先登录' }, 401);
 
-    const { content } = await request.json();
-    if (!content || !content.trim()) return json({ error: '消息不能为空' }, 400);
+    const { content, msg_type, file_url } = await request.json();
+    const type = msg_type || 'text';
+
+    if (type === 'text' && (!content || !content.trim())) {
+        return json({ error: '消息不能为空' }, 400);
+    }
+    if ((type === 'image' || type === 'voice') && !file_url && !content) {
+        return json({ error: '文件地址不能为空' }, 400);
+    }
 
     const targetId = parseInt(userId);
     const friendship = await env.DB.prepare(
@@ -796,10 +909,18 @@ async function handleSendMessage(userId, request, env) {
 
     if (!friendship) return json({ error: '只能给好友发消息' }, 403);
 
-    await env.DB.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
-        .bind(user.id, targetId, content.trim()).run();
+    const msgContent = content ? content.trim() : '';
+    const msgFileUrl = file_url || '';
 
-    return json({ message: '发送成功' }, 201);
+    const result = await env.DB.prepare(
+        'INSERT INTO messages (sender_id, receiver_id, content, msg_type, file_url) VALUES (?, ?, ?, ?, ?)'
+    ).bind(user.id, targetId, msgContent, type, msgFileUrl).run();
+
+    return json({
+        message: '发送成功',
+        id: result.meta?.last_row_id,
+        msg_type: type
+    }, 201);
 }
 
 async function handleMarkRead(userId, request, env) {

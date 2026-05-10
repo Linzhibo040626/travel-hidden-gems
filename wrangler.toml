@@ -6,6 +6,10 @@ binding = "DB"
 database_name = "travel-db"
 database_id = "YOUR_DATABASE_ID"
 
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "travel-chat-files"
+
 [ai]
 binding = "AI"
 

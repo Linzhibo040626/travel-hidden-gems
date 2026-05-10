@@ -136,14 +136,32 @@ const API = {
     async getConversations() {
         return this.request('/messages/conversations');
     },
-    async getMessages(userId) {
-        return this.request('/messages/' + userId);
+    async getMessages(userId, { before, after, limit } = {}) {
+        const params = new URLSearchParams();
+        if (before) params.set('before', before);
+        if (after) params.set('after', after);
+        if (limit) params.set('limit', limit);
+        const qs = params.toString();
+        return this.request('/messages/' + userId + (qs ? '?' + qs : ''));
     },
-    async sendMessage(userId, content) {
+    async sendMessage(userId, content, msgType = 'text', fileUrl = '') {
         return this.request('/messages/' + userId, {
             method: 'POST',
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, msg_type: msgType, file_url: fileUrl })
         });
+    },
+    async uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '上传失败');
+        return data;
     },
     async markRead(userId) {
         return this.request('/messages/' + userId + '/read', { method: 'POST' });
